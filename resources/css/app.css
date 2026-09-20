@@ -1,0 +1,391 @@
+@import 'tailwindcss';
+
+@source '../views/**/*.blade.php';
+@source '../js/**/*.tsx';
+@source '../js/**/*.ts';
+
+/*
+ * Owlorix HR tokens. Values and contrast checks come from docs/DESIGN.md.
+ * Dark theme swaps variables on [data-theme="dark"]; components only read variables.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-display: 'Bricolage Grotesque Variable', 'Segoe UI', sans-serif;
+  --font-sans: 'Instrument Sans Variable', 'Segoe UI', sans-serif;
+
+  --color-ink: var(--ink);
+  --color-feather: var(--feather);
+  --color-teal: var(--teal);
+  --color-teal-text: var(--teal-text);
+  --color-mist: var(--mist);
+  --color-gold: var(--gold);
+  --color-gold-text: var(--gold-text);
+  --color-gold-tint: var(--gold-tint);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-panel: var(--panel);
+  --color-heading: var(--heading);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+}
+
+:root {
+  --ink: #1a1a2e;
+  --feather: #1e4461;
+  --teal: #5ba6b4;
+  --teal-text: #2b6874;
+  --mist: #dceeee;
+  --gold: #c99a33;
+  --gold-text: #8a6414;
+  --gold-tint: #f3e7c8;
+  --paper: #fbfaf7;
+  --surface: #ffffff;
+  --line: #e4e1d8;
+  --line-strong: #cfcabc;
+  --muted: #55607a;
+  --danger: #b42318;
+  --success: #2f7d5b;
+
+  --primary-bg: var(--feather);
+  --primary-fg: #ffffff;
+  --focus: var(--feather);
+  --panel: var(--mist);
+  --selected: var(--mist);
+  --heading: var(--feather);
+
+  --eye-socket: #dceeee;
+  --eye-brow: #1e4461;
+  --eye-outline: #1a1a2e;
+  --eye-lid: #1e4461;
+
+  --r-brow: 24px 24px 8px 8px;
+  --shadow-float: 0 18px 40px -12px rgb(26 26 46 / 0.35), 0 2px 6px rgb(26 26 46 / 0.12);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --paper: #10121f;
+  --surface: #1a1a2e;
+  --ink: #edeff5;
+  --muted: #9aa3b8;
+  --line: #2a2d45;
+  --line-strong: #3a3e5c;
+  --teal-text: #7cc3cf;
+  --gold-text: #c99a33;
+  --gold-tint: #3a2f17;
+  --danger: #f97066;
+  --success: #6cc59a;
+
+  --primary-bg: #5ba6b4;
+  --primary-fg: #10121f;
+  --focus: #5ba6b4;
+  --panel: #1b2b45;
+  --selected: #1b2b45;
+  --heading: #edeff5;
+
+  --eye-brow: #5ba6b4;
+  --eye-outline: #10121f;
+  --eye-lid: #5ba6b4;
+
+  --shadow-float: 0 18px 40px -12px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+  }
+}
+
+@layer components {
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+  }
+
+  .h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    color: var(--heading);
+  }
+
+  .h2 {
+    font-family: var(--font-display);
+    font-weight: 650;
+    font-size: 20px;
+    line-height: 1.2;
+    color: var(--heading);
+  }
+
+  .link {
+    color: var(--teal-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  /* Buttons: 44px tall for touch, never fixed width so Indonesian labels fit. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid transparent;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line-strong);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--selected);
+  }
+  .btn-quiet {
+    background: transparent;
+    color: var(--teal-text);
+    padding: 0 6px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    font-weight: 500;
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .label {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .input {
+    min-height: 44px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .input::placeholder {
+    color: var(--muted);
+  }
+  .input:focus {
+    border-color: var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .input[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  .help {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .error-text {
+    font-size: 13px;
+    color: var(--danger);
+    font-weight: 500;
+  }
+
+  /* Status chips carry an icon plus text, never color alone. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1.5px solid var(--line-strong);
+    color: var(--ink);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .chip-pending {
+    background: var(--gold-tint);
+    border-color: var(--gold);
+  }
+  .chip-ok {
+    color: var(--success);
+    border-color: currentColor;
+  }
+  .chip-bad {
+    color: var(--danger);
+    border-color: currentColor;
+  }
+  .chip-info {
+    background: var(--panel);
+    border-color: transparent;
+  }
+
+  /* Brow cut: the owl brow echo, only on key panels (DESIGN.md, Identity motif). */
+  .brow {
+    background: var(--panel);
+    border-radius: var(--r-brow);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    background: var(--panel);
+    color: var(--ink);
+    flex: none;
+    border: 1.5px solid color-mix(in srgb, var(--eye-brow) 40%, transparent);
+  }
+
+  .table-wrap {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 10px 12px;
+    border-bottom: 1.5px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  .table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .seg {
+    display: inline-flex;
+    border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .seg button {
+    padding: 5px 10px;
+    min-height: 32px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--selected);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 15px;
+  }
+  .nav-item:hover {
+    background: color-mix(in srgb, var(--selected) 60%, transparent);
+  }
+  .nav-item[aria-current='page'] {
+    background: var(--selected);
+    font-weight: 650;
+    box-shadow: inset 3px 0 0 var(--eye-brow);
+  }
+
+  /* Only layers that float over content carry a shadow (DESIGN.md, Layout). */
+  .floating {
+    box-shadow: var(--shadow-float);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
