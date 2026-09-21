@@ -5,8 +5,8 @@ namespace App\Modules\Identity\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Attendance\Services\WebClock;
 use App\Modules\Attendance\Services\WebDevice;
+use App\Modules\Identity\Auth\AccountLookup;
 use App\Modules\Identity\Auth\LoginThrottle;
-use App\Modules\Identity\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,12 +28,14 @@ class SignInController extends Controller
     public function store(Request $request, LoginThrottle $throttle): RedirectResponse
     {
         $credentials = $request->validate([
-            'username' => ['required', 'string', 'max:50'],
+            'username' => ['required', 'string', 'max:190'],
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $username = trim($credentials['username']);
-        $wait = $throttle->secondsUntilAllowed($username, $request->ip());
+        $identifier = trim($credentials['username']);
+        $user = AccountLookup::find($identifier);
+        $account = AccountLookup::throttleKey($identifier, $user);
+        $wait = $throttle->secondsUntilAllowed($account, $request->ip());
 
         if ($wait > 0) {
             throw ValidationException::withMessages([
@@ -41,10 +43,8 @@ class SignInController extends Controller
             ]);
         }
 
-        $user = User::query()->where('username', $username)->first();
-
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            $throttle->recordFailure($username, $request->ip());
+            $throttle->recordFailure($account, $request->ip());
 
             throw ValidationException::withMessages(['username' => __('auth.failed')]);
         }
@@ -53,7 +53,7 @@ class SignInController extends Controller
             throw ValidationException::withMessages(['username' => __('auth.inactive')]);
         }
 
-        $throttle->clear($username);
+        $throttle->clear($account);
 
         Auth::login($user);
         $request->session()->regenerate();

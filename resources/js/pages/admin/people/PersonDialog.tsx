@@ -6,7 +6,7 @@ import { Link, router, useForm } from '@inertiajs/react';
 import { Key, WarningCircle, X } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { ChoiceTile } from './ChoiceTile';
-import type { PersonRow, PersonStatus, RoleName, TeamOption } from './types';
+import type { EmploymentType, PersonRow, PersonStatus, RoleName, TeamOption } from './types';
 
 export type PersonDialogMode = { kind: 'create' } | { kind: 'edit'; person: PersonRow };
 
@@ -18,6 +18,7 @@ interface Props {
     teams: TeamOption[];
     roles: RoleName[];
     statuses: PersonStatus[];
+    employment_types: EmploymentType[];
     currentUserId: number;
     canManageTeams: boolean;
 }
@@ -48,12 +49,13 @@ type FormShape = {
     username: string;
     email: string;
     employee_code: string;
+    employment_type: EmploymentType;
     roles: RoleName[];
     team_ids: number[];
     status: PersonStatus;
 };
 
-function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses, currentUserId, canManageTeams }: Omit<Props, 'mode'> & { mode: PersonDialogMode; titleId: string }) {
+function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses, employment_types, currentUserId, canManageTeams }: Omit<Props, 'mode'> & { mode: PersonDialogMode; titleId: string }) {
     const t = useT();
     const person = mode.kind === 'edit' ? mode.person : null;
     const isSelf = person?.id === currentUserId;
@@ -66,6 +68,7 @@ function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses,
         username: person?.username ?? '',
         email: person?.email ?? '',
         employee_code: person?.employee_code ?? '',
+        employment_type: person?.employment_type ?? 'permanent',
         roles: person?.roles ?? ['employee'],
         team_ids: person?.team_ids ?? [],
         status: person?.status ?? 'active',
@@ -175,6 +178,7 @@ function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses,
                         maxLength={190}
                         value={form.data.email}
                         onChange={(e) => form.setData('email', e.target.value)}
+                        help={t('people.form.email_help')}
                         error={errors.email}
                     />
                     <TextField
@@ -188,6 +192,22 @@ function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses,
                         error={errors.employee_code}
                     />
                 </div>
+
+                <ChoiceGroup legend={t('people.form.employment_type')} help={t('people.form.employment_type_help')} error={errors.employment_type}>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                        {employment_types.map((type) => (
+                            <ChoiceTile
+                                key={type}
+                                type="radio"
+                                name="employment_type"
+                                value={type}
+                                label={t(`common.employment.${type}`)}
+                                checked={form.data.employment_type === type}
+                                onChange={() => form.setData('employment_type', type)}
+                            />
+                        ))}
+                    </div>
+                </ChoiceGroup>
 
                 <ChoiceGroup legend={t('people.form.roles')} help={t('people.form.roles_help')} error={errors.roles ?? firstNested(errors, 'roles')}>
                     <div className="grid gap-2 sm:grid-cols-2">

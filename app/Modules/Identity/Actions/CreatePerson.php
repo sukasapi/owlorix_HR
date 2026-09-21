@@ -3,6 +3,7 @@
 namespace App\Modules\Identity\Actions;
 
 use App\Modules\Identity\Auth\TemporaryPassword;
+use App\Modules\Identity\Enums\EmploymentType;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Actions\TeamMembership;
@@ -17,7 +18,7 @@ class CreatePerson
     ) {}
 
     /**
-     * @param  array{name: string, username: string, email?: ?string, employee_code?: ?string, roles: list<string>, team_ids?: ?list<int>}  $data
+     * @param  array{name: string, username: string, email?: ?string, employee_code?: ?string, employment_type: string, roles: list<string>, team_ids?: ?list<int>}  $data
      * @return array{user: User, password: string}
      */
     public function __invoke(array $data): array
@@ -31,6 +32,7 @@ class CreatePerson
                 'username' => $data['username'],
                 'email' => $data['email'] ?? null,
                 'employee_code' => $data['employee_code'] ?? null,
+                'employment_type' => EmploymentType::from($data['employment_type']),
                 'password' => $password,
                 'must_change_password' => true,
                 'password_changed_at' => null,

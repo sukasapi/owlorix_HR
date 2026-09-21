@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
+use App\Modules\Identity\Http\Middleware\EnsureImposterEnabled;
 use App\Modules\Identity\Http\Middleware\EnsurePasswordChanged;
 use App\Modules\Identity\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Identity\Http\Middleware\SetLocale;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'password.changed' => EnsurePasswordChanged::class,
             'permission' => PermissionMiddleware::class,
+            'imposter.enabled' => EnsureImposterEnabled::class,
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('sign-in'));

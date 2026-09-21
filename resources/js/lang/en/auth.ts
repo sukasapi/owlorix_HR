@@ -5,7 +5,7 @@ export default {
         lead: 'Clock in and out from My day or with the desktop app on a studio PC. The web app also shows your history, overtime, and team work.',
         lead_desktop_only: 'Clock in and out with the desktop app on a studio PC. The web app is for your history, overtime, and team work.',
         heading: 'Sign in to the web app',
-        username: 'Username',
+        username: 'Username or email',
         password: 'Password',
         show_password: 'Show',
         hide_password: 'Hide',

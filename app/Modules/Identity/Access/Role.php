@@ -16,23 +16,34 @@ enum Role: string
     /** @return list<Permission> */
     public function permissions(): array
     {
-        $management = [
+        $work = [
             Permission::ClockIn,
+            Permission::ViewProjects,
+            Permission::LogActivity,
+        ];
+
+        $management = [
+            ...$work,
             Permission::ApproveOvertime,
             Permission::ViewTeamBoard,
             Permission::OpenWorkdays,
             Permission::ProposeCorrections,
             Permission::ViewTeamReports,
+            Permission::ManageProjects,
         ];
 
         return match ($this) {
-            self::Employee => [Permission::ClockIn],
+            self::Employee => $work,
             self::TeamLead => $management,
             self::ProjectManager => [...$management, Permission::ApproveAnyOvertime],
             self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions],
             self::Superadmin => [
                 Permission::ClockIn,
+                Permission::ViewProjects,
+                Permission::ManageProjects,
+                Permission::LogActivity,
                 Permission::ManageUsers,
+                Permission::ImpersonateUsers,
                 Permission::ManageTeams,
                 Permission::ManageCalendar,
                 Permission::ManageSettings,

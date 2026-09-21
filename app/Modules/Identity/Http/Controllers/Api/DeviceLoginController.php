@@ -5,9 +5,9 @@ namespace App\Modules\Identity\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Modules\Attendance\Http\ApiError;
 use App\Modules\Attendance\Support\Time;
+use App\Modules\Identity\Auth\AccountLookup;
 use App\Modules\Identity\Auth\LoginThrottle;
 use App\Modules\Identity\Models\Device;
-use App\Modules\Identity\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Desktop sign-in (docs/03-architecture.md 4.2). Issues one Sanctum token per person per PC, named with the device id.
- * Failed attempts count per username (LoginThrottle); the plain request limit per IP is high because every studio
+ * Failed attempts count per account (LoginThrottle); the plain request limit per IP is high because every studio
  * PC shares one public IP.
  */
 class DeviceLoginController extends Controller
@@ -38,7 +38,7 @@ class DeviceLoginController extends Controller
         $limiter->hit($ipKey, 60);
 
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:50'],
+            'username' => ['required', 'string', 'max:190'],
             'password' => ['required', 'string', 'max:255'],
             // Ids starting with "web:" belong to browsers (docs/02 3.11)
             'device_id' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._:\-]+$/', 'not_regex:/^web:/i'],
@@ -46,17 +46,17 @@ class DeviceLoginController extends Controller
             'app_version' => ['required', 'string', 'max:20'],
         ]);
 
-        $username = trim($data['username']);
-        $wait = $throttle->secondsUntilAllowed($username, $request->ip());
+        $identifier = trim($data['username']);
+        $user = AccountLookup::find($identifier);
+        $account = AccountLookup::throttleKey($identifier, $user);
+        $wait = $throttle->secondsUntilAllowed($account, $request->ip());
 
         if ($wait > 0) {
             return ApiError::response(429, 'throttled', __('auth.throttle_minutes', ['minutes' => (int) ceil($wait / 60)]), ['Retry-After' => $wait]);
         }
 
-        $user = User::query()->where('username', $username)->first();
-
         if ($user === null || ! Hash::check($data['password'], $user->password)) {
-            $throttle->recordFailure($username, $request->ip());
+            $throttle->recordFailure($account, $request->ip());
 
             throw ValidationException::withMessages(['username' => __('auth.failed')]);
         }
@@ -69,7 +69,7 @@ class DeviceLoginController extends Controller
             return ApiError::response(403, 'device_revoked', __('auth.device_revoked'));
         }
 
-        $throttle->clear($username);
+        $throttle->clear($account);
         $now = CarbonImmutable::now();
 
         $token = DB::transaction(function () use ($user, $data, $now) {

@@ -50,6 +50,12 @@ it('replaces the earlier token of the same person on the same PC', function () {
         ->and(Device::query()->sole()->app_version)->toBe('0.1.1');
 });
 
+it('signs in a device with the email address instead of the username', function () {
+    $this->postJson('/api/v1/auth/device-login', deviceLogin(['username' => $this->person->email]))
+        ->assertOk()
+        ->assertJsonPath('user.username', $this->person->username);
+});
+
 it('refuses a wrong password as JSON without saying which part was wrong', function () {
     $this->post('/api/v1/auth/device-login', deviceLogin(['username' => $this->person->username, 'password' => 'wrong-password']))
         ->assertUnprocessable()

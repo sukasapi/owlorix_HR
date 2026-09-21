@@ -17,8 +17,14 @@ enum Permission: string
     // Project Director and Superadmin
     case ChangeOvertimeDecisions = 'overtime.change_decisions';
 
+    // Projects module
+    case ViewProjects = 'projects.view';
+    case ManageProjects = 'projects.manage';
+    case LogActivity = 'activity.log';
+
     // Superadmin
     case ManageUsers = 'users.manage';
+    case ImpersonateUsers = 'users.impersonate';
     case ManageTeams = 'teams.manage';
     case ManageCalendar = 'calendar.manage';
     case ManageSettings = 'settings.manage';

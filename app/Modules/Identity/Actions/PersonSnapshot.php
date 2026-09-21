@@ -9,7 +9,7 @@ use App\Modules\Identity\Models\User;
  */
 class PersonSnapshot
 {
-    /** @return array{name: string, username: string, email: ?string, employee_code: ?string, status: string, roles: list<string>, team_ids: list<int>} */
+    /** @return array{name: string, username: string, email: ?string, employee_code: ?string, employment_type: string, status: string, roles: list<string>, team_ids: list<int>} */
     public static function of(User $user): array
     {
         return [
@@ -17,6 +17,7 @@ class PersonSnapshot
             'username' => $user->username,
             'email' => $user->email,
             'employee_code' => $user->employee_code,
+            'employment_type' => $user->employment_type->value,
             'status' => $user->status->value,
             'roles' => self::roles($user),
             'team_ids' => $user->teams()->pluck('teams.id')->map(fn ($id) => (int) $id)->sort()->values()->all(),

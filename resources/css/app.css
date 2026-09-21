@@ -365,6 +365,14 @@
     font-weight: 500;
     color: var(--ink);
     font-size: 15px;
+    min-height: 44px;
+    position: relative;
+  }
+  .nav-item--compact {
+    gap: 9px;
+    padding: 7px 10px;
+    font-size: 14px;
+    min-height: 40px;
   }
   .nav-item:hover {
     background: color-mix(in srgb, var(--selected) 60%, transparent);

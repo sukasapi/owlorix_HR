@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Modules\Identity\Access\Permission;
+use App\Modules\Identity\Auth\ImposterSession;
 use App\Modules\Overtime\Services\PendingApprovals;
 use App\Modules\Shared\Navigation\Navigation;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $imposter = app(ImposterSession::class);
+        $actor = $imposter->active($request) ? $imposter->actor($request) : null;
 
         return [
             ...parent::share($request),
@@ -37,6 +40,11 @@ class HandleInertiaRequests extends Middleware
                     ->filter(fn (Permission $p) => $user->hasPermission($p))
                     ->map(fn (Permission $p) => $p->value)
                     ->values(),
+                'imposter' => $actor ? [
+                    'active' => true,
+                    'actor_name' => $actor->name,
+                    'actor_username' => $actor->username,
+                ] : null,
             ] : null,
             'nav' => fn () => $user && ! $user->must_change_password ? app(Navigation::class)->forUser($user) : [],
             // Counts shown next to nav items, keyed like the nav item (Q13: badge on web)

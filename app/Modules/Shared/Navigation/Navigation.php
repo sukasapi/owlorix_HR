@@ -23,10 +23,13 @@ class Navigation
                 ['key' => 'my_day', 'route' => 'my-day', 'permissions' => [Permission::ClockIn]],
                 ['key' => 'history', 'route' => 'history', 'permissions' => [Permission::ClockIn]],
                 ['key' => 'overtime', 'route' => 'overtime.mine', 'permissions' => [Permission::ClockIn]],
+                ['key' => 'my_tasks', 'route' => 'projects.mine', 'permissions' => [Permission::ViewProjects]],
+                ['key' => 'activity_log', 'route' => 'activity.index', 'permissions' => [Permission::LogActivity]],
             ]],
             ['group' => 'team', 'items' => [
                 ['key' => 'team_today', 'route' => 'team.today', 'permissions' => [Permission::ViewTeamBoard]],
                 ['key' => 'approvals', 'route' => 'approvals.index', 'permissions' => [Permission::ApproveOvertime, Permission::ChangeOvertimeDecisions]],
+                ['key' => 'projects', 'route' => 'projects.index', 'permissions' => [Permission::ViewProjects, Permission::ManageProjects]],
                 ['key' => 'reports', 'route' => 'reports.index', 'permissions' => [Permission::ViewTeamReports, Permission::ViewAllReports]],
                 ['key' => 'calendar', 'route' => 'calendar.index', 'permissions' => [Permission::OpenWorkdays, Permission::ManageCalendar]],
                 // Management proposes corrections; someone who also applies them finds the page under Admin
@@ -35,6 +38,7 @@ class Navigation
             ['group' => 'admin', 'items' => [
                 ['key' => 'people', 'route' => 'admin.people.index', 'permissions' => [Permission::ManageUsers]],
                 ['key' => 'teams', 'route' => 'admin.teams.index', 'permissions' => [Permission::ManageTeams]],
+                ['key' => 'imposter', 'route' => 'imposter.index', 'permissions' => [Permission::ImpersonateUsers]],
                 ['key' => 'corrections', 'route' => 'corrections.index', 'permissions' => [Permission::ApplyCorrections]],
                 ['key' => 'devices', 'route' => 'admin.devices.index', 'permissions' => [Permission::ManageDevices]],
                 ['key' => 'rules', 'route' => 'admin.settings.edit', 'permissions' => [Permission::ManageSettings]],

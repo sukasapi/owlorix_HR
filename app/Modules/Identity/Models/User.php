@@ -5,6 +5,7 @@ namespace App\Modules\Identity\Models;
 use App\Modules\Attendance\Models\Shift;
 use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Access\Role;
+use App\Modules\Identity\Enums\EmploymentType;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Organization\Models\Team;
 use App\Modules\Overtime\Models\OvertimeRequest;
@@ -30,6 +31,7 @@ class User extends Authenticatable
         'name',
         'email',
         'employee_code',
+        'employment_type',
         'password',
         'must_change_password',
         'password_changed_at',
@@ -50,6 +52,7 @@ class User extends Authenticatable
             'must_change_password' => 'boolean',
             'password_changed_at' => 'datetime',
             'status' => UserStatus::class,
+            'employment_type' => EmploymentType::class,
         ];
     }
 

@@ -5,7 +5,7 @@ export default {
         lead: 'Absen masuk dan pulang dari halaman Hari ini atau aplikasi desktop di PC studio. Di web kamu juga melihat riwayat, lembur, dan urusan tim.',
         lead_desktop_only: 'Absen masuk dan pulang lewat aplikasi desktop di PC studio. Di web kamu melihat riwayat, lembur, dan urusan tim.',
         heading: 'Masuk ke web',
-        username: 'Username',
+        username: 'Username atau email',
         password: 'Kata sandi',
         show_password: 'Lihat',
         hide_password: 'Sembunyikan',

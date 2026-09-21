@@ -35,4 +35,9 @@ return [
 
     'password_min_length' => 12,
 
+    // Superadmin can sign in as another person for support. Off in production unless set.
+    'imposter' => [
+        'enabled' => (bool) env('IMPOSTER_MODE', false),
+    ],
+
 ];
