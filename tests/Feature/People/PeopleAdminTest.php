@@ -16,6 +16,7 @@ function personPayload(array $overrides = []): array
         'username' => 'nama.uji',
         'email' => null,
         'employee_code' => null,
+        'employment_type' => 'permanent',
         'roles' => [Role::Employee->value],
         'team_ids' => [],
     ], $overrides);
@@ -27,6 +28,7 @@ function updatePayload(User $user, array $overrides = []): array
         'name' => $user->name,
         'email' => $user->email,
         'employee_code' => $user->employee_code,
+        'employment_type' => $user->employment_type->value,
         'roles' => $user->roles()->pluck('name')->all(),
         'team_ids' => $user->teams()->pluck('teams.id')->all(),
         'status' => $user->status->value,

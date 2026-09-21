@@ -24,7 +24,7 @@ function toQuery(filters: Filters): Record<string, string | number> {
 
 export default function PeopleIndex() {
     const { props } = usePage<SharedProps & PeoplePageProps>();
-    const { people, filters, teams, roles, statuses } = props;
+    const { people, filters, teams, roles, statuses, employment_types } = props;
     const t = useT();
     const searchId = useId();
     const statusId = useId();
@@ -190,6 +190,7 @@ export default function PeopleIndex() {
                 teams={teams}
                 roles={roles}
                 statuses={statuses}
+                employment_types={employment_types}
                 currentUserId={props.auth?.user.id ?? 0}
                 canManageTeams={canManageTeams}
             />

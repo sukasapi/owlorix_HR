@@ -1,5 +1,6 @@
 export type PersonStatus = 'active' | 'suspended' | 'left';
 export type RoleName = 'employee' | 'team_lead' | 'project_manager' | 'project_director' | 'superadmin';
+export type EmploymentType = 'permanent' | 'contract' | 'freelance' | 'intern';
 
 export interface PersonRow {
     id: number;
@@ -8,6 +9,7 @@ export interface PersonRow {
     initials: string;
     email: string | null;
     employee_code: string | null;
+    employment_type: EmploymentType;
     status: PersonStatus;
     roles: RoleName[];
     team_ids: number[];
@@ -41,4 +43,5 @@ export interface PeoplePageProps {
     teams: TeamOption[];
     roles: RoleName[];
     statuses: PersonStatus[];
+    employment_types: EmploymentType[];
 }

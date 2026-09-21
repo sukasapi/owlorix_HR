@@ -11,6 +11,12 @@ export interface AuthUser {
     must_change_password: boolean;
 }
 
+export interface ImposterState {
+    active: true;
+    actor_name: string;
+    actor_username: string;
+}
+
 export interface NavItem {
     key: string;
     href: string;
@@ -30,7 +36,7 @@ export interface IssuedCredentials {
 
 export interface SharedProps {
     app: { name: string; timezone: string; locale: Locale };
-    auth: { user: AuthUser; permissions: string[] } | null;
+    auth: { user: AuthUser; permissions: string[]; imposter: ImposterState | null } | null;
     nav: NavGroup[];
     /** Counts next to nav items, keyed by nav item key (for example `approvals`). */
     nav_badges?: Partial<Record<string, number>>;

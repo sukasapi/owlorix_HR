@@ -24,6 +24,25 @@ it('signs in with username and password', function () {
     $this->assertAuthenticatedAs($user);
 });
 
+it('signs in with the email address instead of the username', function () {
+    $user = userWithRole(Role::Employee);
+
+    $this->post(route('sign-in.store'), ['username' => $user->email, 'password' => 'password-for-tests'])
+        ->assertRedirect(route('my-day'));
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('does not sign anyone in for an email nobody owns', function () {
+    userWithRole(Role::Employee);
+
+    $this->from(route('sign-in'))
+        ->post(route('sign-in.store'), ['username' => 'bukan.siapa-siapa@owlorix.com', 'password' => 'password-for-tests'])
+        ->assertSessionHasErrors(['username' => __('auth.failed')]);
+
+    $this->assertGuest();
+});
+
 it('rejects a wrong password without saying which part was wrong', function () {
     $user = userWithRole(Role::Employee);
 
@@ -60,6 +79,23 @@ it('makes a username wait after 5 failures, and counts per username not per IP',
     $this->post(route('sign-in.store'), ['username' => $colleague->username, 'password' => 'password-for-tests'])
         ->assertRedirect(route('my-day'));
     $this->assertAuthenticatedAs($colleague);
+});
+
+it('counts failures on the email and the username of one person together', function () {
+    $user = userWithRole(Role::Employee);
+
+    foreach (range(1, 3) as $attempt) {
+        $this->post(route('sign-in.store'), ['username' => $user->username, 'password' => 'wrong-password']);
+    }
+
+    foreach (range(1, 2) as $attempt) {
+        $this->post(route('sign-in.store'), ['username' => $user->email, 'password' => 'wrong-password']);
+    }
+
+    $this->post(route('sign-in.store'), ['username' => $user->username, 'password' => 'password-for-tests'])
+        ->assertSessionHasErrors('username');
+
+    $this->assertGuest();
 });
 
 it('lets the username try again after the wait', function () {

@@ -28,6 +28,7 @@ export function PeopleList({ people, teams, onEdit }: Props) {
                         <tr>
                             <th scope="col">{t('people.columns.name')}</th>
                             <th scope="col">{t('people.columns.username')}</th>
+                            <th scope="col">{t('people.columns.employment')}</th>
                             <th scope="col">{t('people.columns.teams')}</th>
                             <th scope="col">{t('people.columns.roles')}</th>
                             <th scope="col">{t('people.columns.status')}</th>
@@ -48,6 +49,7 @@ export function PeopleList({ people, teams, onEdit }: Props) {
                                     </span>
                                 </td>
                                 <td className="break-all">{person.username}</td>
+                                <td>{t(`common.employment.${person.employment_type}`)}</td>
                                 <td>{teamsOf(person) || <span className="text-muted">{t('people.no_team')}</span>}</td>
                                 <td>{rolesOf(person)}</td>
                                 <td>
@@ -74,7 +76,8 @@ export function PeopleList({ people, teams, onEdit }: Props) {
                         <div className="min-w-0 flex-1">
                             <p className="m-0 font-semibold break-words">{person.name}</p>
                             <p className="m-0 text-sm break-all text-muted">{person.username}</p>
-                            <p className="m-0 mt-1 text-sm">{rolesOf(person)}</p>
+                            <p className="m-0 mt-1 text-sm">{t(`common.employment.${person.employment_type}`)}</p>
+                            <p className="m-0 text-sm">{rolesOf(person)}</p>
                             <p className="m-0 text-sm text-muted">{teamsOf(person) || t('people.no_team')}</p>
                             <div className="mt-2">
                                 <StatusChip status={person.status} />

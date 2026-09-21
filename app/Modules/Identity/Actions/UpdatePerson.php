@@ -3,6 +3,7 @@
 namespace App\Modules\Identity\Actions;
 
 use App\Modules\Identity\Access\Role;
+use App\Modules\Identity\Enums\EmploymentType;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Http\Requests\PeopleMessages;
 use App\Modules\Identity\Models\User;
@@ -20,7 +21,7 @@ class UpdatePerson
     ) {}
 
     /**
-     * @param  array{name: string, email?: ?string, employee_code?: ?string, roles: list<string>, team_ids?: ?list<int>, status: string}  $data
+     * @param  array{name: string, email?: ?string, employee_code?: ?string, employment_type: string, roles: list<string>, team_ids?: ?list<int>, status: string}  $data
      *
      * @throws ValidationException when a Superadmin guard blocks the change
      */
@@ -34,6 +35,7 @@ class UpdatePerson
             $before = PersonSnapshot::of($user);
             $roles = collect($data['roles'])->unique()->sort()->values()->all();
             $status = UserStatus::from($data['status']);
+            $employmentType = EmploymentType::from($data['employment_type']);
 
             $this->guard($actor, $user, $roles, $status, $activeSuperadminIds->all());
 
@@ -41,6 +43,7 @@ class UpdatePerson
                 'name' => $data['name'],
                 'email' => $data['email'] ?? null,
                 'employee_code' => $data['employee_code'] ?? null,
+                'employment_type' => $employmentType,
                 'status' => $status,
             ])->save();
 
@@ -113,7 +116,7 @@ class UpdatePerson
             ]);
         }
 
-        $changed = collect(['name', 'email', 'employee_code', 'team_ids'])
+        $changed = collect(['name', 'email', 'employee_code', 'employment_type', 'team_ids'])
             ->filter(fn (string $key) => $before[$key] !== $after[$key])
             ->values();
 
