@@ -48,7 +48,7 @@ class ActivityLogController extends Controller
             ]);
 
         $logs = WorkActivityLog::query()
-            ->with('project:id,name,code')
+            ->with(['project:id,name,code', 'task:id,title'])
             ->where('user_id', $user->id)
             ->orderByDesc('started_at')
             ->limit(100)
@@ -145,6 +145,7 @@ class ActivityLogController extends Controller
             'project_id' => $log->project_id,
             'project_name' => $log->project?->name,
             'project_code' => $log->project?->code,
+            'task' => $log->task ? ['id' => $log->task->id, 'title' => $log->task->title] : null,
             'description' => $log->description,
             'started_at' => $log->started_at->toIso8601String(),
             'ended_at' => $log->ended_at->toIso8601String(),

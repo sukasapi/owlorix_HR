@@ -35,12 +35,13 @@ enum Role: string
         return match ($this) {
             self::Employee => $work,
             self::TeamLead => $management,
-            self::ProjectManager => [...$management, Permission::ApproveAnyOvertime],
-            self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions],
+            self::ProjectManager => [...$management, Permission::ApproveAnyOvertime, Permission::OverseeProjects],
+            self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions, Permission::OverseeProjects],
             self::Superadmin => [
                 Permission::ClockIn,
                 Permission::ViewProjects,
                 Permission::ManageProjects,
+                Permission::OverseeProjects,
                 Permission::LogActivity,
                 Permission::ManageUsers,
                 Permission::ImpersonateUsers,

@@ -31,6 +31,7 @@ export default {
         delete: 'Delete',
         delete_confirm: 'Delete this log?',
     },
+    from_task: 'From task: :title',
     open_evidence: 'Open evidence',
     edit: 'Edit',
 };

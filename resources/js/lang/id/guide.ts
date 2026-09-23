@@ -1,0 +1,48 @@
+export default {
+    title: 'Panduan',
+    lead: 'Cara memakai Owlorix HR, dari absen sampai tugas proyek. Isinya menyesuaikan peranmu.',
+    ask: {
+        label: 'Tanya atau cari di panduan',
+        placeholder: 'Contoh: kenapa waktu saya mulai dari nol?',
+        hint: 'Tulis pertanyaan dengan kata-katamu sendiri. Jawaban diambil dari halaman panduan yang paling cocok.',
+        examples: 'Coba:',
+        clear: 'Hapus pencarian',
+    },
+    answer: {
+        heading: 'Jawaban dari panduan',
+        from: 'Dari halaman :title',
+        open: 'Baca halaman lengkap',
+        none_title: 'Belum ketemu jawabannya di panduan.',
+        none_body: 'Coba kata lain yang lebih pendek, misalnya nama menu atau tombolnya.',
+        contact: 'Masih buntu? Tanya Team Lead atau Superadmin.',
+        contact_email: 'Masih buntu? Tanya Team Lead, Superadmin, atau email :email.',
+        pages: 'Halaman terkait',
+        terms: 'Istilah terkait',
+        count: ':count halaman cocok',
+    },
+    tabs: {
+        label: 'Bagian panduan',
+        book: 'Buku',
+        flows: 'Alur',
+        glossary: 'Kamus A-Z',
+    },
+    book: {
+        contents: 'Daftar isi',
+        chapter: 'Bab :number',
+        page: 'Halaman :number dari :total',
+        previous: 'Sebelumnya',
+        next: 'Berikutnya',
+        turn: 'Pindah halaman',
+    },
+    flow: {
+        lead: 'Gambar alur utama. Setiap alur punya halaman yang menjelaskan langkahnya.',
+        read: 'Baca halamannya: :title',
+        if: 'Kalau',
+    },
+    glossary: {
+        lead: 'Istilah yang muncul di aplikasi dan artinya.',
+        letters: 'Loncat ke huruf',
+        read: 'Baca: :title',
+    },
+    language_note: '',
+};

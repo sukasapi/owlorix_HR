@@ -24,6 +24,17 @@ return [
         'app.timezone' => 'Asia/Jakarta',
     ],
 
+    // Defaults for Pengaturan aplikasi (docs/13). Rows `branding.<key>` in the `settings` table override these.
+    'branding' => [
+        'app_name' => 'Owlorix HR',
+        'studio_name' => 'Owlorix Creative Lab',
+        'footer_text' => 'created by',
+        'footer_link_label' => 'Sukasapi',
+        'footer_link_url' => 'https://sukasap.com',
+        'contact_email' => '',
+        'logo_path' => null,
+    ],
+
     'login' => [
         // Failures per username before the first wait, and the waits in minutes after each further block of failures.
         'failures_per_step' => 5,

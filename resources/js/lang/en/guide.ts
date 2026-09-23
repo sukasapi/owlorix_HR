@@ -1,0 +1,48 @@
+export default {
+    title: 'Guide',
+    lead: 'How to use Owlorix HR, from clocking in to project tasks. The pages follow your role.',
+    ask: {
+        label: 'Ask or search the guide',
+        placeholder: 'For example: kenapa waktu saya mulai dari nol?',
+        hint: 'Type a question in your own words. The answer comes from the guide page that fits best.',
+        examples: 'Try:',
+        clear: 'Clear search',
+    },
+    answer: {
+        heading: 'Answer from the guide',
+        from: 'From the page :title',
+        open: 'Read the full page',
+        none_title: 'No answer in the guide yet.',
+        none_body: 'Try other, shorter words, such as the name of a menu or button.',
+        contact: 'Still stuck? Ask your Team Lead or Superadmin.',
+        contact_email: 'Still stuck? Ask your Team Lead, Superadmin, or email :email.',
+        pages: 'Related pages',
+        terms: 'Related terms',
+        count: ':count matching pages',
+    },
+    tabs: {
+        label: 'Guide sections',
+        book: 'Book',
+        flows: 'Flows',
+        glossary: 'Glossary A-Z',
+    },
+    book: {
+        contents: 'Contents',
+        chapter: 'Chapter :number',
+        page: 'Page :number of :total',
+        previous: 'Previous',
+        next: 'Next',
+        turn: 'Turn the page',
+    },
+    flow: {
+        lead: 'The main flows. Each one has a page that explains its steps.',
+        read: 'Read the page: :title',
+        if: 'If',
+    },
+    glossary: {
+        lead: 'Terms you see in the app and what they mean.',
+        letters: 'Jump to letter',
+        read: 'Read: :title',
+    },
+    language_note: 'The guide pages are written in Indonesian, the studio language. Search works best with Indonesian words.',
+};

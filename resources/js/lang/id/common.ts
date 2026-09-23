@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'Kerja saya', team: 'Tim', admin: 'Admin' },
+        groups: { my_work: 'Kerja saya', team: 'Tim', admin: 'Admin', help: 'Bantuan' },
         my_day: 'Hari ini',
         history: 'Riwayat',
         overtime: 'Lembur',
@@ -14,6 +14,8 @@ export default {
         devices: 'Perangkat',
         rules: 'Aturan',
         audit: 'Log audit',
+        app_settings: 'Pengaturan aplikasi',
+        guide: 'Panduan',
         projects: 'Proyek',
         my_tasks: 'Tugas saya',
         activity_log: 'Log kerja',
@@ -36,7 +38,9 @@ export default {
         imposter_return: 'Kembali ke Superadmin',
         footer_product: 'Owlorix HR',
         footer_studio: 'Owlorix Creative Lab',
-        footer_copy: '© :year Owlorix Creative Lab',
+        footer_copy: '© :year :studio',
+        profile: 'Profil saya',
+        timer_label: 'Timer berjalan: :task, :time. Buka tugas',
         sidebar_collapse: 'Ciutkan menu',
         sidebar_expand: 'Perluas menu',
     },

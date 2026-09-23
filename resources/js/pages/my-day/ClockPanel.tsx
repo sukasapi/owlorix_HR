@@ -51,7 +51,8 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
     const hasShifts = summary.shifts.length > 0;
     const eyes = useEyesMotion(hasShifts || open ? eyesFor[summary.status] : 'closed');
     const time = (iso: string | null | undefined) => (iso ? formatTime(iso, locale) : '');
-    const progress = Math.min(100, Math.round((summary.regular_minutes / Math.max(1, summary.regular_limit_minutes)) * 100));
+    const regularMinutes = useLiveRegularMinutes(summary);
+    const progress = Math.min(100, Math.round((regularMinutes / Math.max(1, summary.regular_limit_minutes)) * 100));
 
     const heading = (() => {
         if (!open) return hasShifts ? t('my-day.status.signed_out') : t('my-day.not_clocked_in');
@@ -85,7 +86,7 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
             {(hasShifts || open) && (
                 <>
                     <p className="display num m-0 mt-5 text-[52px] text-heading sm:text-[80px]">
-                        {formatMinutes(summary.regular_minutes, locale)}
+                        {formatMinutes(regularMinutes, locale)}
                         <span className="ml-2 font-sans text-lg font-semibold tracking-normal text-muted sm:text-[22px]">{t('my-day.worked_today')}</span>
                     </p>
                     {summary.is_workday && (
@@ -94,7 +95,7 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
                             role="progressbar"
                             aria-valuemin={0}
                             aria-valuemax={summary.regular_limit_minutes}
-                            aria-valuenow={summary.regular_minutes}
+                            aria-valuenow={regularMinutes}
                             aria-label={t('my-day.worked_today')}
                         >
                             <span className="block h-full rounded-md bg-[var(--eye-brow)]" style={{ width: `${progress}%` }} />
@@ -103,7 +104,7 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                         <span className="num font-semibold">
                             {summary.is_workday &&
-                                (summary.regular_minutes >= summary.regular_limit_minutes
+                                (regularMinutes >= summary.regular_limit_minutes
                                     ? t('my-day.regular_done')
                                     : summary.regular_ends_at && open
                                       ? t('my-day.regular_mark', { time: time(summary.regular_ends_at) })
@@ -148,6 +149,24 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
             )}
         </section>
     );
+}
+
+/**
+ * The server total plus the minutes since it arrived, while a shift is counting regular time (DESIGN.md: live
+ * timer). The server total replaces it on every heartbeat, so the number never drifts; it stops at the day's limit
+ * because time after the mark is overtime, which the server reports on its own.
+ */
+function useLiveRegularMinutes(summary: Summary): number {
+    const counting = summary.open_shift?.status === 'open' && summary.is_workday;
+    const now = useNow(30_000, counting);
+    const [loadedAt, setLoadedAt] = useState(() => Date.now());
+
+    useEffect(() => setLoadedAt(Date.now()), [summary]);
+
+    if (!counting) return summary.regular_minutes;
+
+    const extra = Math.max(0, Math.floor((now - loadedAt) / 60_000));
+    return Math.min(summary.regular_limit_minutes, summary.regular_minutes + extra);
 }
 
 function ClockInAction({ summary }: { summary: Summary }) {

@@ -1,10 +1,14 @@
+import { Avatar } from '@/components/ui/Avatar';
 import { TextField, SelectField, TextAreaField } from '@/components/ui/Field';
 import { Dialog } from '@/components/ui/Dialog';
 import AppShell from '@/layouts/AppShell';
 import { useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { NotePencil, Trash, X } from '@phosphor-icons/react';
+import { NotePencil, Plus, Trash, X } from '@phosphor-icons/react';
+import { SubProjectDialog } from './SubProjectDialog';
+import { SubProjectList } from './SubProjectList';
+import type { PersonOption as LeadOption, SubProjectData } from './taskTypes';
 import { type FormEvent, useId, useState } from 'react';
 
 type ProjectStatus = 'planned' | 'active' | 'done';
@@ -14,6 +18,7 @@ interface Member {
     name: string;
     username: string;
     initials: string;
+    photo_url: string | null;
     status: string;
     assigned_at: string | null;
 }
@@ -41,6 +46,8 @@ interface PageProps {
     can_manage: boolean;
     statuses: ProjectStatus[];
     is_assigned: boolean;
+    sub_projects: SubProjectData[];
+    leads: LeadOption[];
 }
 
 export default function ProjectShow() {
@@ -48,6 +55,7 @@ export default function ProjectShow() {
     const t = useT();
     const { project, can_manage, is_assigned } = props;
     const [editing, setEditing] = useState(false);
+    const [creatingSub, setCreatingSub] = useState(false);
 
     const unassign = (member: Member) => {
         if (!window.confirm(t('projects.unassign_label', { name: member.name }))) return;
@@ -84,7 +92,25 @@ export default function ProjectShow() {
                 </div>
             </div>
 
-            <section className="mt-8" aria-labelledby="members-heading">
+            <section className="mt-8" aria-labelledby="subs-heading">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div className="min-w-0">
+                        <h2 id="subs-heading" className="h2">
+                            {t('tasks.sub.heading')}
+                        </h2>
+                        <p className="m-0 mt-1 max-w-[70ch] text-sm text-muted">{t('tasks.sub.lead')}</p>
+                    </div>
+                    {can_manage && (
+                        <button type="button" className="btn btn-secondary" onClick={() => setCreatingSub(true)}>
+                            <Plus weight="bold" size={18} aria-hidden />
+                            {t('tasks.sub.add')}
+                        </button>
+                    )}
+                </div>
+                <SubProjectList projectId={project.id} items={props.sub_projects} canManage={can_manage} />
+            </section>
+
+            <section className="mt-10" aria-labelledby="members-heading">
                 <h2 id="members-heading" className="h2">
                     {t('projects.members_heading')}
                 </h2>
@@ -97,9 +123,7 @@ export default function ProjectShow() {
                     <ul className="card mt-4 m-0 list-none divide-y divide-line p-0">
                         {project.members.map((member) => (
                             <li key={member.id} className="flex items-center gap-3 px-4 py-3">
-                                <span className="avatar" aria-hidden>
-                                    {member.initials}
-                                </span>
+                                <Avatar initials={member.initials} photoUrl={member.photo_url} />
                                 <div className="min-w-0 flex-1">
                                     <p className="m-0 font-semibold">{member.name}</p>
                                     <p className="m-0 text-sm break-all text-muted">{member.username}</p>
@@ -117,6 +141,7 @@ export default function ProjectShow() {
             </section>
 
             {can_manage && editing && <EditProjectDialog project={project} statuses={props.statuses} onClose={() => setEditing(false)} />}
+            {can_manage && creatingSub && <SubProjectDialog projectId={project.id} leads={props.leads} statuses={props.statuses} onClose={() => setCreatingSub(false)} />}
         </AppShell>
     );
 }

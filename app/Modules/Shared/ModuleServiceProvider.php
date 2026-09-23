@@ -2,6 +2,7 @@
 
 namespace App\Modules\Shared;
 
+use App\Modules\Shared\Branding\Branding;
 use App\Modules\Shared\Settings\Settings;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -15,6 +16,7 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(Settings::class);
+        $this->app->scoped(Branding::class);
 
         foreach (glob(app_path('Modules/*/*ServiceProvider.php')) ?: [] as $file) {
             $module = basename(dirname($file));
@@ -28,6 +30,8 @@ class ModuleServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadTranslationsFrom(__DIR__.'/lang', 'shared');
+
         if ($this->app->routesAreCached()) {
             return;
         }

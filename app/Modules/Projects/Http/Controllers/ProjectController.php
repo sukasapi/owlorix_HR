@@ -7,11 +7,17 @@ use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
 use App\Modules\Projects\Enums\ProjectStatus;
+use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Http\Requests\AssignProjectMemberRequest;
 use App\Modules\Projects\Http\Requests\StoreProjectRequest;
 use App\Modules\Projects\Http\Requests\UpdateProjectRequest;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectMember;
+use App\Modules\Projects\Models\SubProject;
+use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Services\TaskInbox;
+use App\Modules\Projects\Services\TaskPresenter;
+use App\Modules\Projects\Services\TaskTimer;
 use App\Modules\Shared\Audit\Auditor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,6 +67,24 @@ class ProjectController extends Controller
 
         $memberIds = $project->members->pluck('id')->all();
 
+        $subProjects = SubProject::query()
+            ->with('lead')
+            ->where('project_id', $project->id)
+            ->withCount([
+                'tasks as tasks_total' => fn ($q) => $q->where('status', '!=', TaskStatus::Rejected),
+                'tasks as tasks_done' => fn ($q) => $q->where('status', TaskStatus::Done),
+                'tasks as tasks_waiting' => fn ($q) => $q->whereIn('status', [TaskStatus::Proposed, TaskStatus::InReview]),
+            ])
+            ->orderByRaw("FIELD(status, 'active', 'planned', 'done')")
+            ->orderBy('name')
+            ->get()
+            ->map(fn (SubProject $sub) => [
+                ...TaskPresenter::subProject($sub),
+                'tasks_total' => $sub->tasks_total,
+                'tasks_done' => $sub->tasks_done,
+                'tasks_waiting' => $sub->tasks_waiting,
+            ]);
+
         return Inertia::render('projects/Show', [
             'project' => [
                 ...$this->row($project),
@@ -70,10 +94,16 @@ class ProjectController extends Controller
                     'name' => $user->name,
                     'username' => $user->username,
                     'initials' => $user->initials(),
+                    'photo_url' => $user->photoUrl(),
                     'status' => $user->status->value,
                     'assigned_at' => $user->pivot->assigned_at,
                 ])->values(),
             ],
+            'sub_projects' => $subProjects,
+            'leads' => $request->user()->hasPermission(Permission::ManageProjects)
+                ? User::query()->active()->permission(Permission::ManageProjects->value)->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
+                    ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])->values()
+                : [],
             'people' => collect($people)->reject(fn ($p) => in_array($p['id'], $memberIds, true))->values(),
             'can_manage' => $request->user()->hasPermission(Permission::ManageProjects),
             'statuses' => array_map(fn (ProjectStatus $s) => $s->value, ProjectStatus::cases()),
@@ -188,13 +218,43 @@ class ProjectController extends Controller
         return back()->with('status', __('projects::messages.member_removed', ['name' => $user->name]));
     }
 
-    public function mine(Request $request): Response
+    public function mine(Request $request, TaskInbox $inbox, TaskTimer $timer): Response
     {
         Gate::authorize('viewAny', Project::class);
 
+        $user = $request->user();
+        $withPlace = ['project', 'subProject', 'assignee', 'creator'];
+
+        $myTasks = Task::query()
+            ->withLoggedMinutes()
+            ->with($withPlace)
+            ->where('assignee_id', $user->id)
+            ->whereIn('status', [TaskStatus::ChangesRequested, TaskStatus::InProgress, TaskStatus::Todo, TaskStatus::InReview])
+            ->orderByRaw("FIELD(status, 'changes_requested', 'in_progress', 'todo', 'in_review')")
+            ->orderByRaw('due_date is null, due_date')
+            ->limit(100)
+            ->get()
+            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t))
+            ->values();
+
+        $waiting = ($inbox->waitingQuery($user)?->with($withPlace)->withLoggedMinutes()->orderBy('updated_at')->limit(100)->get() ?? collect())
+            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t))
+            ->values();
+
+        $proposals = Task::query()
+            ->with($withPlace)
+            ->where('created_by', $user->id)
+            ->where(fn ($q) => $q->where('status', TaskStatus::Proposed)
+                ->orWhere(fn ($r) => $r->where('status', TaskStatus::Rejected)->where('decided_at', '>=', now()->subDays(30))))
+            ->orderByDesc('updated_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t))
+            ->values();
+
         $assignments = ProjectMember::query()
             ->with('project')
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $user->id)
             ->orderByDesc('assigned_at')
             ->get()
             ->filter(fn (ProjectMember $m) => $m->project !== null)
@@ -206,6 +266,10 @@ class ProjectController extends Controller
 
         return Inertia::render('projects/Mine', [
             'assignments' => $assignments,
+            'my_tasks' => $myTasks,
+            'waiting' => $waiting,
+            'proposals' => $proposals,
+            'running' => TaskPresenter::timer($timer->running($user)?->load('task')),
         ]);
     }
 

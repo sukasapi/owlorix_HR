@@ -29,9 +29,21 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
         'name',
+        'nickname',
         'email',
         'employee_code',
         'employment_type',
+        'job_title',
+        'phone',
+        'birth_place',
+        'birth_date',
+        'gender',
+        'address',
+        'emergency_contact_name',
+        'emergency_contact_relation',
+        'emergency_contact_phone',
+        'bio',
+        'portfolio_url',
         'password',
         'must_change_password',
         'password_changed_at',
@@ -43,6 +55,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'avatar_path',
+        'cv_path',
     ];
 
     protected function casts(): array
@@ -53,6 +67,8 @@ class User extends Authenticatable
             'password_changed_at' => 'datetime',
             'status' => UserStatus::class,
             'employment_type' => EmploymentType::class,
+            'birth_date' => 'date:Y-m-d',
+            'cv_uploaded_at' => 'datetime',
         ];
     }
 
@@ -92,6 +108,22 @@ class User extends Authenticatable
         $letters = collect($words)->filter()->take(2)->map(fn (string $w) => Str::upper(Str::substr($w, 0, 1)));
 
         return $letters->implode('') ?: Str::upper(Str::substr($this->username, 0, 2));
+    }
+
+    /** Name shown around the app: the nickname when the person set one. Reports and exports keep the full name. */
+    public function displayName(): string
+    {
+        return filled($this->nickname) ? $this->nickname : $this->name;
+    }
+
+    /** Profile photo URL, versioned so a new upload is not hidden by the browser cache. Null shows initials. */
+    public function photoUrl(): ?string
+    {
+        if (blank($this->avatar_path)) {
+            return null;
+        }
+
+        return route('people.photo', ['user' => $this->id, 'v' => substr(md5($this->avatar_path), 0, 8)], absolute: false);
     }
 
     public function scopeActive(Builder $query): void

@@ -76,7 +76,8 @@ it('includes a shift from yesterday that is still running after midnight', funct
     expect($today)
         ->date->toBe('2026-09-15')
         ->status->toBe('open')
-        ->regular_minutes->toBe(0)
+        // The running shift's own date total, not today's 0 (docs/13 section 6)
+        ->regular_minutes->toBe(180)
         ->and($today['shifts'][0]['work_date'])->toBe('2026-09-14')
         ->and($today['shifts'][0]['regular_minutes'])->toBe(180);
 });

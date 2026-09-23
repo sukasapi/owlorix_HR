@@ -5,6 +5,7 @@ use App\Modules\Identity\Http\Controllers\Admin\PeopleController;
 use App\Modules\Identity\Http\Controllers\ImposterController;
 use App\Modules\Identity\Http\Controllers\PasswordController;
 use App\Modules\Identity\Http\Controllers\PreferencesController;
+use App\Modules\Identity\Http\Controllers\ProfileController;
 use App\Modules\Identity\Http\Controllers\SignInController;
 use App\Modules\Identity\Http\Controllers\WebHandoffController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,24 @@ Route::middleware('auth')->group(function () {
     Route::put('/kata-sandi', [PasswordController::class, 'update'])->name('password.update');
 
     Route::patch('/preferensi', [PreferencesController::class, 'update'])->name('preferences.update');
+});
+
+// Profil: own identity data, photo, and CV (docs/13). Photos are visible to colleagues, the CV to its owner and Superadmin.
+Route::middleware(['auth', 'password.changed'])->group(function () {
+    Route::prefix('profil')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+        Route::put('/', [ProfileController::class, 'update'])->name('update');
+
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('/foto', [ProfileController::class, 'storePhoto'])->name('photo.store');
+            Route::delete('/foto', [ProfileController::class, 'destroyPhoto'])->name('photo.destroy');
+            Route::post('/cv', [ProfileController::class, 'storeCv'])->name('cv.store');
+            Route::delete('/cv', [ProfileController::class, 'destroyCv'])->name('cv.destroy');
+        });
+    });
+
+    Route::get('/orang/{user}/foto', [ProfileController::class, 'photo'])->name('people.photo');
+    Route::get('/orang/{user}/cv', [ProfileController::class, 'cv'])->name('people.cv');
 });
 
 Route::middleware(['auth', 'password.changed', 'imposter.enabled'])

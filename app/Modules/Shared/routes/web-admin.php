@@ -1,8 +1,10 @@
 <?php
 
 use App\Modules\Identity\Access\Permission;
+use App\Modules\Shared\Http\Controllers\Admin\AppSettingsController;
 use App\Modules\Shared\Http\Controllers\Admin\AuditLogController;
 use App\Modules\Shared\Http\Controllers\Admin\SettingsController;
+use App\Modules\Shared\Http\Controllers\BrandLogoController;
 use Illuminate\Support\Facades\Route;
 
 // Aturan: rule settings (Superadmin).
@@ -18,3 +20,17 @@ Route::middleware(['auth', 'password.changed', 'permission:'.Permission::ManageS
 Route::middleware(['auth', 'password.changed', 'permission:'.Permission::ViewAuditLog->value])
     ->get('/admin/log-audit', AuditLogController::class)
     ->name('admin.audit.index');
+
+// Pengaturan aplikasi: app name, studio name, footer, logo (Superadmin, docs/13).
+Route::middleware(['auth', 'password.changed', 'permission:'.Permission::ManageSettings->value])
+    ->prefix('admin/aplikasi')
+    ->name('admin.app-settings.')
+    ->group(function () {
+        Route::get('/', [AppSettingsController::class, 'edit'])->name('edit');
+        Route::put('/', [AppSettingsController::class, 'update'])->name('update');
+        Route::post('/logo', [AppSettingsController::class, 'storeLogo'])->middleware('throttle:20,1')->name('logo.store');
+        Route::delete('/logo', [AppSettingsController::class, 'destroyLogo'])->name('logo.destroy');
+    });
+
+// The logo is public: the sign-in page and the favicon show it before sign-in.
+Route::get('/merek/logo', BrandLogoController::class)->middleware('throttle:120,1')->name('brand.logo');

@@ -552,3 +552,15 @@ test('3.11.9 a person on a phone and a desktop PC at the same time has one shift
         ->regular_minutes->toBe(180)
         ->and($desk->state()['shift'])->toBeNull();
 });
+
+test('3.11 a shift still running after midnight keeps its day total on Hari ini instead of showing 0', function () {
+    $this->browser->post('/absen/masuk', at: '2026-09-14 20:00');
+    $this->browser->keepAlive('2026-09-15 00:30');
+
+    $summary = $this->browser->summary();
+
+    expect($summary['date'])->toBe('2026-09-15')
+        ->and($summary['status'])->toBe('open')
+        ->and($summary['regular_minutes'])->toBe(270)
+        ->and($summary['shifts'][0]['regular_minutes'])->toBe(270);
+});

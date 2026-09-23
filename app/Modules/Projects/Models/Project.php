@@ -38,6 +38,11 @@ class Project extends Model
         return $this->hasMany(ProjectMember::class);
     }
 
+    public function subProjects(): HasMany
+    {
+        return $this->hasMany(SubProject::class);
+    }
+
     public function activityLogs(): HasMany
     {
         return $this->hasMany(WorkActivityLog::class);
