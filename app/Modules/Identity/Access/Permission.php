@@ -21,6 +21,8 @@ enum Permission: string
     case ViewProjects = 'projects.view';
     case ManageProjects = 'projects.manage';
     case LogActivity = 'activity.log';
+    // Decide proposals and review evidence on every sub project, not only the ones a person leads
+    case OverseeProjects = 'projects.oversee';
 
     // Superadmin
     case ManageUsers = 'users.manage';

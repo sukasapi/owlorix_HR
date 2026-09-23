@@ -31,6 +31,7 @@ export default {
         delete: 'Hapus',
         delete_confirm: 'Hapus log ini?',
     },
+    from_task: 'Dari tugas: :title',
     open_evidence: 'Buka bukti',
     edit: 'Ubah',
 };

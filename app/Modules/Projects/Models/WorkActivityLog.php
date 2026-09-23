@@ -14,6 +14,7 @@ class WorkActivityLog extends Model
     protected $fillable = [
         'user_id',
         'project_id',
+        'task_id',
         'description',
         'started_at',
         'ended_at',
@@ -36,5 +37,10 @@ class WorkActivityLog extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class)->withTrashed();
     }
 }

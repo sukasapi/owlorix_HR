@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'My work', team: 'Team', admin: 'Admin' },
+        groups: { my_work: 'My work', team: 'Team', admin: 'Admin', help: 'Help' },
         my_day: 'My day',
         history: 'History',
         overtime: 'Overtime',
@@ -14,6 +14,8 @@ export default {
         devices: 'Devices',
         rules: 'Rules',
         audit: 'Audit log',
+        app_settings: 'App settings',
+        guide: 'Guide',
         projects: 'Projects',
         my_tasks: 'My tasks',
         activity_log: 'Work log',
@@ -36,7 +38,9 @@ export default {
         imposter_return: 'Return to Superadmin',
         footer_product: 'Owlorix HR',
         footer_studio: 'Owlorix Creative Lab',
-        footer_copy: '© :year Owlorix Creative Lab',
+        footer_copy: '© :year :studio',
+        profile: 'My profile',
+        timer_label: 'Timer running: :task, :time. Open the task',
         sidebar_collapse: 'Collapse menu',
         sidebar_expand: 'Expand menu',
     },

@@ -65,6 +65,9 @@ export function useWebHeartbeat(active: boolean, seconds: number): string | null
             if (!document.hidden && Date.now() - lastBeat > (seconds * 1000) / 2) beat();
         };
 
+        // One heartbeat right away: someone who reopens the page 3 minutes after closing it is back before the
+        // interruption limit, and should not wait another full interval for the server to know it
+        beat();
         const id = window.setInterval(beat, seconds * 1000);
         document.addEventListener('visibilitychange', onVisibility);
 

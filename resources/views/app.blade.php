@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 @php
     $theme = auth()->user()?->theme ?? 'system';
+    $brand = app(\App\Modules\Shared\Branding\Branding::class);
+    $appName = $brand->get('app_name');
 @endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme-pref="{{ $theme }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="color-scheme" content="light dark">
-        <title inertia>{{ config('app.name') }}</title>
-        <link rel="icon" type="image/png" href="/owlorix-logo.png">
+        <meta name="application-name" content="{{ $appName }}">
+        <title inertia>{{ $appName }}</title>
+        <link rel="icon" href="{{ $brand->logoUrl() }}">
         <script>
             // Apply the theme before first paint so dark rooms do not get a white flash.
             (function () {

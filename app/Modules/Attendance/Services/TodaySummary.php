@@ -59,7 +59,11 @@ class TodaySummary
         }
 
         $todays = $byDate[$today];
-        $shifts = $open !== null && $open->shift->work_date < $today ? [$open, ...$todays] : $todays;
+        $carriedOver = $open !== null && $open->shift->work_date < $today;
+        $shifts = $carriedOver ? [$open, ...$todays] : $todays;
+        // A shift still running after midnight belongs to the date it started (3.1), so the big number keeps that
+        // date's regular total instead of dropping to today's 0 while the shift runs on
+        $regularShifts = $carriedOver ? ($byDate[$open->shift->work_date] ?? [$open]) : $todays;
 
         $requests = $this->overtime->forShifts(array_map(fn (ResolvedShift $r) => $r->shift->id, $shifts));
         $current = $open ?? ($shifts === [] ? null : $shifts[array_key_last($shifts)]);
@@ -80,7 +84,7 @@ class TodaySummary
             'is_workday' => $todays[0]->isWorkday ?? $this->calendar->isWorkday($user, $today),
             'status' => $open?->result->status->value ?? 'signed_out',
             'regular_limit_minutes' => $current?->shift->regular_limit_minutes ?? $this->settings->int('attendance.regular_limit_minutes'),
-            'regular_minutes' => array_sum(array_map(fn (ResolvedShift $r) => $r->result->regularMinutes, $todays)),
+            'regular_minutes' => array_sum(array_map(fn (ResolvedShift $r) => $r->result->regularMinutes, $regularShifts)),
             'overtime_minutes' => array_sum(array_map(fn (ResolvedShift $r) => $r->result->overtimeMinutes, $shifts)),
             'idle_minutes' => array_sum(array_map(fn (ResolvedShift $r) => $r->result->idleMinutes, $shifts)),
             'regular_ends_at' => Time::iso($current?->result->regularEndsAt),

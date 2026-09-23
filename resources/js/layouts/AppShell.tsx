@@ -1,11 +1,12 @@
 import { OwlEyes } from '@/components/owl/OwlEyes';
+import { Avatar } from '@/components/ui/Avatar';
 import { Notice } from '@/components/ui/Notice';
 import { formatLongDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import { effectiveTheme, saveTheme, useThemeSync } from '@/lib/theme';
-import type { NavGroup, SharedProps } from '@/types';
+import type { Brand, NavGroup, SharedProps, TaskTimer } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CaretDoubleLeft, CaretDoubleRight, DotsNine, Key, Moon, SignOut, Sun, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, DotsNine, Key, Moon, SignOut, Sun, Timer, UserCircle, X } from '@phosphor-icons/react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { navIcons } from './navIcons';
 
@@ -176,47 +177,83 @@ export default function AppShell({ title, children }: Props) {
     );
 }
 
+/**
+ * Studio logo from Pengaturan aplikasi. The bundled logo has black lettering on white, so every logo sits on a
+ * white tile and reads the same in both themes.
+ */
+function BrandLogo({ brand, size }: { brand: Brand; size: number }) {
+    return <img src={brand.logo_url} alt="" width={size} height={size} className="flex-none rounded-[6px] bg-white object-contain" style={{ width: size, height: size }} />;
+}
+
 function Brand({ collapsed }: { collapsed?: boolean }) {
+    const brand = usePage<SharedProps>().props.app.brand;
+
     if (collapsed) {
         return (
-            <Link href={route('my-day')} className="inline-flex rounded-sm p-1" aria-label="Owlorix HR">
-                <OwlEyes state="open" size={32} />
+            <Link href={route('my-day')} className="inline-flex rounded-sm p-1" aria-label={brand.name}>
+                <BrandLogo brand={brand} size={36} />
             </Link>
         );
     }
 
     return (
         <Link href={route('my-day')} className="flex min-w-0 items-center gap-2.5 rounded-sm px-2 py-1">
-            <OwlEyes state="open" size={36} />
-            <span className="truncate font-display text-[18px] font-[750] tracking-[-0.01em] text-heading xl:text-[19px]">Owlorix HR</span>
+            <BrandLogo brand={brand} size={36} />
+            <span className="truncate font-display text-[18px] font-[750] tracking-[-0.01em] text-heading xl:text-[19px]">{brand.name}</span>
         </Link>
     );
 }
 
 function SidebarFooter() {
     const t = useT();
+    const brand = usePage<SharedProps>().props.app.brand;
     const year = new Date().getFullYear();
 
     return (
         <div className="mt-2 px-2.5 pb-1">
-            <p className="m-0 truncate text-[12px] font-semibold text-ink">{t('common.shell.footer_product')}</p>
-            <p className="m-0 mt-0.5 truncate text-[11px] text-muted">{t('common.shell.footer_copy', { year })}</p>
+            <p className="m-0 truncate text-[12px] font-semibold text-ink">{brand.name}</p>
+            <p className="m-0 mt-0.5 truncate text-[11px] text-muted">{t('common.shell.footer_copy', { year, studio: brand.studio })}</p>
         </div>
     );
 }
 
+/** Footer text, credit link, and contact come from Pengaturan aplikasi; empty values are left out. */
 function AppFooter() {
     const t = useT();
+    const brand = usePage<SharedProps>().props.app.brand;
     const year = new Date().getFullYear();
+    const hasLink = brand.footer_link_label !== '' && brand.footer_link_url !== '';
 
     return (
         <footer className="mt-auto border-t border-line px-4 pt-4 pb-[calc(1rem+56px+env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:py-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="m-0 text-sm font-semibold text-ink">
-                    {t('common.shell.footer_product')}
-                    <span className="font-normal text-muted"> · {t('common.shell.footer_studio')} ~ created by <a href="https://sukasap.com" target="_blank" rel="noopener noreferrer">Sukasapi</a></span>
+                    {brand.name}
+                    <span className="font-normal text-muted">
+                        {` · ${brand.studio}`}
+                        {(brand.footer_text !== '' || hasLink) && ' · '}
+                        {brand.footer_text}
+                        {hasLink && (
+                            <>
+                                {brand.footer_text !== '' && ' '}
+                                <a href={brand.footer_link_url} target="_blank" rel="noopener noreferrer" className="link">
+                                    {brand.footer_link_label}
+                                </a>
+                            </>
+                        )}
+                    </span>
                 </p>
-                <p className="m-0 text-[13px] text-muted">{t('common.shell.footer_copy', { year })}</p>
+                <p className="m-0 text-[13px] text-muted">
+                    {brand.contact_email !== '' && (
+                        <>
+                            <a href={`mailto:${brand.contact_email}`} className="link">
+                                {brand.contact_email}
+                            </a>
+                            {' · '}
+                        </>
+                    )}
+                    {t('common.shell.footer_copy', { year, studio: brand.studio })}
+                </p>
             </div>
         </footer>
     );
@@ -318,11 +355,39 @@ function TopBar() {
                 <span className="truncate text-sm font-semibold sm:text-base">{formatLongDate(today, locale)}</span>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3.5">
+                {props.task_timer && <TimerChip timer={props.task_timer} />}
                 <LocaleSwitch />
                 <ThemeToggle />
                 {user && <AccountMenu />}
             </div>
         </header>
+    );
+}
+
+/** Running task timer on every page, so a forgotten timer gets noticed. Opens the task. */
+function TimerChip({ timer }: { timer: TaskTimer }) {
+    const t = useT();
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const id = window.setInterval(() => setNow(Date.now()), 30_000);
+        return () => window.clearInterval(id);
+    }, []);
+
+    const minutes = Math.max(0, Math.floor((now - new Date(timer.started_at).getTime()) / 60_000));
+    const label = `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+
+    return (
+        <Link
+            href={route('tasks.show', timer.task_id)}
+            className="chip chip-pending num min-h-[40px] max-w-[46vw] sm:max-w-[260px]"
+            title={timer.task_title}
+            aria-label={t('common.shell.timer_label', { task: timer.task_title, time: label })}
+        >
+            <Timer weight="bold" size={16} aria-hidden className="flex-none" />
+            <span className="flex-none">{label}</span>
+            <span className="hidden min-w-0 truncate lg:inline">{timer.task_title}</span>
+        </Link>
     );
 }
 
@@ -412,14 +477,21 @@ function AccountMenu() {
                 aria-label={t('common.shell.account')}
                 onClick={() => setOpen((v) => !v)}
             >
-                {user.initials}
+                {user.photo_url ? <img src={user.photo_url} alt="" className="size-full rounded-full object-cover" /> : user.initials}
             </button>
             {open && (
                 <div id={menuId} role="menu" className="floating absolute top-12 right-0 z-40 w-64 rounded-md border border-line bg-surface p-2">
-                    <div className="px-3 pt-2 pb-3">
-                        <p className="m-0 font-semibold">{user.name}</p>
-                        <p className="m-0 text-[13px] text-muted">{t('common.shell.signed_in_as', { username: user.username })}</p>
+                    <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                        <Avatar initials={user.initials} photoUrl={user.photo_url} className="h-10 w-10" />
+                        <div className="min-w-0">
+                            <p className="m-0 truncate font-semibold">{user.display_name}</p>
+                            <p className="m-0 truncate text-[13px] text-muted">{t('common.shell.signed_in_as', { username: user.username })}</p>
+                        </div>
                     </div>
+                    <Link href={route('profile.edit')} role="menuitem" className="nav-item text-[15px]" onClick={() => setOpen(false)}>
+                        <UserCircle weight="bold" size={18} aria-hidden />
+                        {t('common.shell.profile')}
+                    </Link>
                     <Link href={route('password.edit')} role="menuitem" className="nav-item text-[15px]" onClick={() => setOpen(false)}>
                         <Key weight="bold" size={18} aria-hidden />
                         {t('common.shell.change_password')}
@@ -438,6 +510,7 @@ function MobileMenu({ groups, url, onClose }: { groups: NavGroup[]; url: string;
     const t = useT();
     const ref = useRef<HTMLDialogElement>(null);
     const titleId = useId();
+    const studio = usePage<SharedProps>().props.app.brand.studio;
     const year = new Date().getFullYear();
 
     useEffect(() => {
@@ -461,6 +534,10 @@ function MobileMenu({ groups, url, onClose }: { groups: NavGroup[]; url: string;
             </div>
             <NavList groups={groups} url={url} />
             <div className="mt-3 border-t border-line pt-3">
+                <Link href={route('profile.edit')} className="nav-item">
+                    <UserCircle weight="bold" size={18} aria-hidden />
+                    {t('common.shell.profile')}
+                </Link>
                 <Link href={route('password.edit')} className="nav-item">
                     <Key weight="bold" size={18} aria-hidden />
                     {t('common.shell.change_password')}
@@ -470,7 +547,7 @@ function MobileMenu({ groups, url, onClose }: { groups: NavGroup[]; url: string;
                     {t('common.shell.sign_out')}
                 </Link>
             </div>
-            <p className="m-0 mt-4 text-center text-[12px] text-muted">{t('common.shell.footer_copy', { year })}</p>
+            <p className="m-0 mt-4 text-center text-[12px] text-muted">{t('common.shell.footer_copy', { year, studio })}</p>
         </dialog>
     );
 }

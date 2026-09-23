@@ -42,7 +42,12 @@ class Navigation
                 ['key' => 'corrections', 'route' => 'corrections.index', 'permissions' => [Permission::ApplyCorrections]],
                 ['key' => 'devices', 'route' => 'admin.devices.index', 'permissions' => [Permission::ManageDevices]],
                 ['key' => 'rules', 'route' => 'admin.settings.edit', 'permissions' => [Permission::ManageSettings]],
+                ['key' => 'app_settings', 'route' => 'admin.app-settings.edit', 'permissions' => [Permission::ManageSettings]],
                 ['key' => 'audit', 'route' => 'admin.audit.index', 'permissions' => [Permission::ViewAuditLog]],
+            ]],
+            // No permissions: everyone who is signed in reads the guide
+            ['group' => 'help', 'items' => [
+                ['key' => 'guide', 'route' => 'guide.index', 'permissions' => []],
             ]],
         ];
     }
@@ -62,7 +67,7 @@ class Navigation
                     continue;
                 }
 
-                $allowed = collect($item['permissions'])->contains(fn (Permission $p) => $user->hasPermission($p))
+                $allowed = ($item['permissions'] === [] || collect($item['permissions'])->contains(fn (Permission $p) => $user->hasPermission($p)))
                     && ! (isset($item['unless']) && $user->hasPermission($item['unless']));
 
                 if ($allowed) {

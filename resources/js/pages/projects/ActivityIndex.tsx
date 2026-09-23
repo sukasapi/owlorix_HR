@@ -3,7 +3,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import AppShell from '@/layouts/AppShell';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
-import { router, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, PencilSimple, Trash } from '@phosphor-icons/react';
 import { type FormEvent, useId, useMemo, useState } from 'react';
 
@@ -20,6 +20,7 @@ interface LogRow {
     project_id: number;
     project_name: string | null;
     project_code: string | null;
+    task: { id: number; title: string } | null;
     description: string;
     started_at: string;
     ended_at: string;
@@ -119,7 +120,10 @@ export default function ActivityIndex() {
                                 <tbody>
                                     {props.logs.map((log) => (
                                         <tr key={log.id}>
-                                            <td className="font-semibold">{log.project_name}</td>
+                                            <td>
+                                                <span className="font-semibold">{log.project_name}</span>
+                                                {log.task && <TaskLink task={log.task} />}
+                                            </td>
                                             <td className="num whitespace-nowrap">{formatRange(log.started_at, log.ended_at, locale, timezone)}</td>
                                             <td className="max-w-[40ch] break-words">{log.description}</td>
                                             <td>
@@ -156,6 +160,7 @@ export default function ActivityIndex() {
                             {props.logs.map((log) => (
                                 <li key={log.id} className="flex flex-col gap-2 px-4 py-3.5">
                                     <p className="m-0 font-semibold">{log.project_name}</p>
+                                    {log.task && <TaskLink task={log.task} />}
                                     <p className="m-0 text-sm text-muted">{formatRange(log.started_at, log.ended_at, locale, timezone)}</p>
                                     <p className="m-0 text-sm break-words">{log.description}</p>
                                     <a href={log.evidence_url} target="_blank" rel="noreferrer" className="link text-sm">
@@ -291,5 +296,16 @@ function ActivityDialog({
                 </footer>
             </form>
         </Dialog>
+    );
+}
+
+/** Rows made from task timer sessions link back to their task. */
+function TaskLink({ task }: { task: { id: number; title: string } }) {
+    const t = useT();
+
+    return (
+        <Link href={route('tasks.show', task.id)} className="link block text-sm break-words">
+            {t('activity.from_task', { title: task.title })}
+        </Link>
     );
 }
