@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'Kerja saya', team: 'Tim', admin: 'Admin', help: 'Bantuan' },
+        groups: { my_work: 'Kerja saya', team: 'Tim', production: 'Produksi', people: 'Orang & akses', admin: 'Pengaturan', oversight: 'Pantauan', help: 'Bantuan' },
         my_day: 'Hari ini',
         history: 'Riwayat',
         overtime: 'Lembur',
@@ -29,6 +29,7 @@ export default {
         activity_monitor: 'Monitor aktivitas',
         menu: 'Menu',
         main: 'Navigasi utama',
+        group_badge: ':count menunggu di grup ini',
         close_menu: 'Tutup menu',
     },
     shell: {

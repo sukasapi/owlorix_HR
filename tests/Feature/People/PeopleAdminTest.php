@@ -43,7 +43,7 @@ describe('authorization', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/people/Index')
-                ->where('nav', fn ($nav) => collect($nav)->firstWhere('group', 'admin')['items'][0]['key'] === 'people'));
+                ->where('nav', fn ($nav) => collect($nav)->firstWhere('group', 'people')['items'][0]['key'] === 'people'));
     });
 
     it('refuses employees and management everywhere on the people pages', function (Role $role) {

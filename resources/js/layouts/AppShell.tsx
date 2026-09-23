@@ -6,7 +6,7 @@ import { useLocale, useT } from '@/lib/i18n';
 import { effectiveTheme, saveTheme, useThemeSync } from '@/lib/theme';
 import type { Brand, NavGroup, SharedProps, TaskTimer } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CaretDoubleLeft, CaretDoubleRight, DotsNine, Key, Moon, SignOut, Sun, Timer, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsNine, Key, Moon, SignOut, Sun, Timer, UserCircle, X } from '@phosphor-icons/react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { navIcons } from './navIcons';
 
@@ -16,6 +16,11 @@ interface Props {
 }
 
 const SIDEBAR_KEY = 'owlorix.sidebar_collapsed';
+const NAV_OPEN_KEY = 'owlorix.nav_open';
+/** Groups a long menu opens with; settings, people, oversight and help start folded (docs/DESIGN.md, App shell) */
+const OPEN_BY_DEFAULT = ['my_work', 'team', 'production'];
+/** A menu with at most this many items is short enough to show whole, without folding */
+const FOLD_ABOVE = 12;
 const BOTTOM_BAR_ORDER = ['my_day', 'approvals', 'team_today', 'history', 'overtime', 'my_tasks', 'activity_log', 'projects', 'reports', 'calendar', 'people', 'teams'];
 
 function bottomRank(key: string) {
@@ -37,6 +42,23 @@ function readCollapsed(): boolean {
         return localStorage.getItem(SIDEBAR_KEY) === '1';
     } catch {
         return false;
+    }
+}
+
+function readNavOpen(): Record<string, boolean> {
+    try {
+        const stored: unknown = JSON.parse(localStorage.getItem(NAV_OPEN_KEY) ?? '{}');
+        return stored !== null && typeof stored === 'object' ? (stored as Record<string, boolean>) : {};
+    } catch {
+        return {};
+    }
+}
+
+function writeNavOpen(value: Record<string, boolean>) {
+    try {
+        localStorage.setItem(NAV_OPEN_KEY, JSON.stringify(value));
+    } catch {
+        // Private mode / blocked storage: folding is remembered for this page only.
     }
 }
 
@@ -302,40 +324,93 @@ function NavBadge({ itemKey, className = '' }: { itemKey: string; className?: st
 
 function NavList({ groups, url, compact = false, collapsed = false }: { groups: NavGroup[]; url: string; compact?: boolean; collapsed?: boolean }) {
     const t = useT();
+    const baseId = useId();
+    const foldable = !collapsed && groups.reduce((sum, group) => sum + group.items.length, 0) > FOLD_ABOVE;
+    const activeGroup = groups.find((group) => group.items.some((item) => isCurrent(url, item.href)))?.group;
+    // The shell mounts again on every visit, so the group of the current page opens each time
+    const [open, setOpen] = useState<Record<string, boolean>>(() => (activeGroup ? { ...readNavOpen(), [activeGroup]: true } : readNavOpen()));
+
+    const isOpen = (group: string) => !foldable || (open[group] ?? OPEN_BY_DEFAULT.includes(group));
+    const toggle = (group: string) =>
+        setOpen((prev) => {
+            const next = { ...prev, [group]: !isOpen(group) };
+            writeNavOpen(next);
+            return next;
+        });
 
     return (
         <nav aria-label={t('common.nav.main')} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
-            {groups.map((group, index) => (
-                <div key={group.group} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
-                    {collapsed ? (
-                        index > 0 ? <div className="my-1.5 border-t border-line" role="separator" /> : null
-                    ) : (
-                        <p className={`m-0 px-2.5 font-semibold text-muted ${compact ? 'pt-2.5 pb-1 text-[12px]' : 'pt-3.5 pb-1.5 text-[13px]'}`}>
-                            {t(`common.nav.groups.${group.group}`)}
-                        </p>
-                    )}
-                    {group.items.map((item) => {
-                        const Icon = navIcons[item.key];
-                        const label = t(`common.nav.${item.key}`);
-                        return (
-                            <Link
-                                key={item.key}
-                                href={item.href}
-                                className={`nav-item ${compact ? 'nav-item--compact' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
-                                aria-current={isCurrent(url, item.href) ? 'page' : undefined}
-                                aria-label={collapsed ? label : undefined}
-                                title={collapsed ? label : undefined}
+            {groups.map((group, index) => {
+                const label = t(`common.nav.groups.${group.group}`);
+                const listId = `${baseId}-${group.group}`;
+                const shown = isOpen(group.group);
+
+                return (
+                    <div key={group.group} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
+                        {collapsed ? (
+                            index > 0 ? <div className="my-1.5 border-t border-line" role="separator" /> : null
+                        ) : foldable ? (
+                            <button
+                                type="button"
+                                aria-expanded={shown}
+                                aria-controls={listId}
+                                onClick={() => toggle(group.group)}
+                                className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 text-left font-semibold text-muted hover:text-ink ${
+                                    compact ? 'mt-1.5 min-h-9 text-[12px]' : 'mt-2 min-h-11 text-[13px]'
+                                }`}
                             >
-                                {Icon && <Icon weight="bold" size={collapsed ? 20 : compact ? 17 : 18} aria-hidden />}
-                                {!collapsed && <span className="min-w-0 truncate">{label}</span>}
-                                {!collapsed && <NavBadge itemKey={item.key} className="ml-auto" />}
-                                {collapsed && <NavBadge itemKey={item.key} className="absolute top-0.5 right-0.5 scale-90" />}
-                            </Link>
-                        );
-                    })}
-                </div>
-            ))}
+                                <span className="min-w-0 flex-1 truncate">{label}</span>
+                                {!shown && <GroupBadge items={group.items} />}
+                                <CaretDown weight="bold" size={14} aria-hidden className={`flex-none transition-transform duration-150 ${shown ? '' : '-rotate-90'}`} />
+                            </button>
+                        ) : (
+                            <p className={`m-0 px-2.5 font-semibold text-muted ${compact ? 'pt-2.5 pb-1 text-[12px]' : 'pt-3.5 pb-1.5 text-[13px]'}`}>{label}</p>
+                        )}
+                        {shown && (
+                            <div id={listId} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
+                                {group.items.map((item) => {
+                                    const Icon = navIcons[item.key];
+                                    const itemLabel = t(`common.nav.${item.key}`);
+                                    return (
+                                        <Link
+                                            key={item.key}
+                                            href={item.href}
+                                            className={`nav-item ${compact ? 'nav-item--compact' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
+                                            aria-current={isCurrent(url, item.href) ? 'page' : undefined}
+                                            aria-label={collapsed ? itemLabel : undefined}
+                                            title={collapsed ? itemLabel : undefined}
+                                        >
+                                            {Icon && <Icon weight="bold" size={collapsed ? 20 : compact ? 17 : 18} aria-hidden />}
+                                            {!collapsed && <span className="min-w-0 truncate">{itemLabel}</span>}
+                                            {!collapsed && <NavBadge itemKey={item.key} className="ml-auto" />}
+                                            {collapsed && <NavBadge itemKey={item.key} className="absolute top-0.5 right-0.5 scale-90" />}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </nav>
+    );
+}
+
+/** On a folded group: the sum of its items' badges, so waiting approvals never hide behind a fold. */
+function GroupBadge({ items }: { items: NavGroup['items'] }) {
+    const badges = usePage<SharedProps>().props.nav_badges ?? {};
+    const t = useT();
+    const count = items.reduce((sum, item) => sum + (badges[item.key] ?? 0), 0);
+
+    if (count <= 0) return null;
+
+    return (
+        <span className="inline-flex">
+            <span aria-hidden className="num inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-gold px-1.5 text-xs leading-none font-bold text-[#1A1A2E]">
+                {count > 99 ? '99+' : count}
+            </span>
+            <span className="sr-only">{t('common.nav.group_badge', { count })}</span>
+        </span>
     );
 }
 

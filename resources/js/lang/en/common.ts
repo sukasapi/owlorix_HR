@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'My work', team: 'Team', admin: 'Admin', help: 'Help' },
+        groups: { my_work: 'My work', team: 'Team', production: 'Production', people: 'People and access', admin: 'Settings', oversight: 'Oversight', help: 'Help' },
         my_day: 'My day',
         history: 'History',
         overtime: 'Overtime',
@@ -29,6 +29,7 @@ export default {
         activity_monitor: 'Activity monitor',
         menu: 'Menu',
         main: 'Main navigation',
+        group_badge: ':count waiting in this group',
         close_menu: 'Close menu',
     },
     shell: {
