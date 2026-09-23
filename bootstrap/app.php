@@ -6,9 +6,11 @@ use App\Modules\Identity\Http\Middleware\EnsureImposterEnabled;
 use App\Modules\Identity\Http\Middleware\EnsurePasswordChanged;
 use App\Modules\Identity\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Identity\Http\Middleware\SetLocale;
+use App\Modules\Monitoring\Http\Middleware\RecordAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,7 +27,12 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUserIsActive::class,
             SetLocale::class,
             HandleInertiaRequests::class,
+            RecordAccess::class,
         ]);
+
+        // Monitor aktivitas must wrap the auth and throttle route middleware, which Laravel otherwise sorts in front
+        // of it, or their refusals (429) would never reach it
+        $middleware->appendToPriorityList(ShareErrorsFromSession::class, RecordAccess::class);
 
         $middleware->alias([
             'password.changed' => EnsurePasswordChanged::class,

@@ -42,6 +42,7 @@ class SummarySheet implements FromArray, WithColumnFormatting, WithColumnWidths,
             $l('rejected_minutes'), $l('rejected_hours'),
             $l('idle_minutes'), $l('idle_hours'),
             $l('short_days'), $l('non_workday_shifts'), $l('review_shifts'), $l('late_claims'),
+            $l('leave_days'),
         ]];
 
         foreach ($this->recap->groups as $group) {
@@ -74,6 +75,7 @@ class SummarySheet implements FromArray, WithColumnFormatting, WithColumnWidths,
 
         $rows[] = [$f('idle')];
         $rows[] = [$f('rejected')];
+        $rows[] = [$f('leave')];
 
         if ($this->recap->hasSharedPeople()) {
             $rows[] = [$f('shared')];
@@ -120,6 +122,7 @@ class SummarySheet implements FromArray, WithColumnFormatting, WithColumnWidths,
             $t->nonWorkdayShifts,
             $t->reviewShifts,
             $t->lateClaims,
+            $t->leaveDays,
         ];
     }
 
@@ -131,7 +134,7 @@ class SummarySheet implements FromArray, WithColumnFormatting, WithColumnWidths,
     /** Fixed widths: the notes below the table would stretch an auto-sized first column. */
     public function columnWidths(): array
     {
-        return ['A' => 18, 'B' => 28, 'C' => 16, 'D' => 14] + array_fill_keys(range('E', 'S'), 13);
+        return ['A' => 18, 'B' => 28, 'C' => 16, 'D' => 14] + array_fill_keys(range('E', 'T'), 13);
     }
 
     public function styles(Worksheet $sheet): array

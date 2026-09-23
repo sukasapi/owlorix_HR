@@ -5,14 +5,15 @@ namespace App\Modules\Shared\Http\Controllers\Admin;
 /**
  * The rule settings Superadmin can edit on Aturan, grouped as on the page, with the limits the server enforces.
  * Every key of config('owlorix.settings') is listed here; `app.timezone` is shown read-only.
- * `rule` names the section of docs/02-attendance-rules.md the value comes from.
+ * `rule` names the section of docs/02-attendance-rules.md the value comes from; empty for values that are not attendance
+ * rules (the access log retention of docs/14 2.3).
  */
 final class SettingsFields
 {
     public const READ_ONLY = ['app.timezone'];
 
     /**
-     * @return list<array{group: string, key: string, type: 'integer'|'boolean', unit: ?string, min: ?int, max: ?int, rule: string, applies: 'new_shifts'|'calculation'|'desktop'|'web'}>
+     * @return list<array{group: string, key: string, type: 'integer'|'boolean', unit: ?string, min: ?int, max: ?int, rule: string, applies: 'new_shifts'|'calculation'|'desktop'|'web'|'daily'|'next_request'}>
      */
     public static function all(): array
     {
@@ -34,10 +35,14 @@ final class SettingsFields
             self::int('desktop_sync', 'attendance.clock_mismatch_seconds', 'seconds', 30, 900, '3.9.4', 'calculation'),
 
             ['group' => 'web', 'key' => 'attendance.web_clock_in', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '3.11.8', 'applies' => 'web'],
+
+            self::int('leave', 'leave.annual_quota_days', 'days', 0, 40, '', 'next_request'),
+
+            self::int('monitoring', 'monitoring.access_log_days', 'days', 30, 730, '', 'daily'),
         ];
     }
 
-    /** @return array{group: string, key: string, type: 'integer', unit: string, min: int, max: int, rule: string, applies: 'new_shifts'|'calculation'|'desktop'|'web'} */
+    /** @return array{group: string, key: string, type: 'integer', unit: string, min: int, max: int, rule: string, applies: 'new_shifts'|'calculation'|'desktop'|'web'|'daily'} */
     private static function int(string $group, string $key, string $unit, int $min, int $max, string $rule, string $applies): array
     {
         return ['group' => $group, 'key' => $key, 'type' => 'integer', 'unit' => $unit, 'min' => $min, 'max' => $max, 'rule' => $rule, 'applies' => $applies];

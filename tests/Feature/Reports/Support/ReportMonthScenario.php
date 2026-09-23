@@ -29,6 +29,7 @@ final class ReportMonthScenario
         'late_claims' => 0,
         'pending_shifts' => 2,
         'running_shifts' => 0,
+        'leave_days' => 0,
     ];
 
     public const SHIFTS = 10;

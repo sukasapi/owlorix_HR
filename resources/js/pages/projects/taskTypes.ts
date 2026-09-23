@@ -3,12 +3,30 @@ import type { Person } from '@/types';
 export type TaskStatus = 'proposed' | 'rejected' | 'todo' | 'in_progress' | 'in_review' | 'changes_requested' | 'done';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type ProjectStatus = 'planned' | 'active' | 'done';
+export type PipelinePhase = 'pre_production' | 'production' | 'post_production';
+
+export const PHASES: PipelinePhase[] = ['pre_production', 'production', 'post_production'];
+
+/** A production pipeline stage. Inactive stages stay on the tasks that have them but are not offered for new ones. */
+export interface StageOption {
+    id: number;
+    name: string;
+    phase: PipelinePhase;
+    is_active: boolean;
+}
+
+/** Hour budget, sent only to people with projects.budget. `minutes` is null when no budget is set. */
+export interface BudgetData {
+    minutes: number | null;
+    logged_minutes: number;
+}
 
 export interface TaskRow {
     id: number;
     title: string;
     status: TaskStatus;
     priority: TaskPriority;
+    stage: StageOption | null;
     due_date: string | null;
     estimate_minutes: number | null;
     evidence_required: boolean;

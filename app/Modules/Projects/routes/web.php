@@ -2,6 +2,8 @@
 
 use App\Modules\Identity\Access\Permission;
 use App\Modules\Projects\Http\Controllers\ActivityLogController;
+use App\Modules\Projects\Http\Controllers\MilestoneController;
+use App\Modules\Projects\Http\Controllers\PipelineStageController;
 use App\Modules\Projects\Http\Controllers\ProjectController;
 use App\Modules\Projects\Http\Controllers\SubProjectController;
 use App\Modules\Projects\Http\Controllers\TaskController;
@@ -30,6 +32,14 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
                 Route::delete('/{project}/anggota/{user}', [ProjectController::class, 'unassign'])->name('unassign');
                 Route::post('/{project}/sub', [SubProjectController::class, 'store'])->name('sub.store');
                 Route::put('/{project}/sub/{subProject}', [SubProjectController::class, 'update'])->scopeBindings()->name('sub.update');
+
+                // Milestones (docs/14 3.2); reading them is part of the project page
+                Route::scopeBindings()->group(function () {
+                    Route::post('/{project}/milestone', [MilestoneController::class, 'store'])->name('milestones.store');
+                    Route::put('/{project}/milestone/{milestone}', [MilestoneController::class, 'update'])->name('milestones.update');
+                    Route::delete('/{project}/milestone/{milestone}', [MilestoneController::class, 'destroy'])->name('milestones.destroy');
+                    Route::post('/{project}/milestone/{milestone}/selesai', [MilestoneController::class, 'complete'])->name('milestones.complete');
+                });
             });
         });
 
@@ -51,6 +61,18 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
                 Route::post('/{task}/kirim', [TaskController::class, 'submit'])->middleware('throttle:30,1')->name('submit');
                 Route::post('/{task}/review', [TaskController::class, 'review'])->name('review');
             });
+        });
+
+    // Pipeline produksi (docs/14 3.1): Project Director and Superadmin
+    Route::middleware('permission:'.Permission::ManagePipeline->value)
+        ->prefix('admin/pipeline')
+        ->name('admin.pipeline.')
+        ->group(function () {
+            Route::get('/', [PipelineStageController::class, 'index'])->name('index');
+            Route::post('/', [PipelineStageController::class, 'store'])->name('store');
+            Route::put('/{stage}', [PipelineStageController::class, 'update'])->name('update');
+            Route::post('/{stage}/pindah', [PipelineStageController::class, 'move'])->name('move');
+            Route::delete('/{stage}', [PipelineStageController::class, 'destroy'])->name('destroy');
         });
 
     Route::middleware('permission:'.Permission::LogActivity->value)

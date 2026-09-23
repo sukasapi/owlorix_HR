@@ -25,10 +25,14 @@ final readonly class Totals
         public int $lateClaims = 0,
         public int $pendingShifts = 0,
         public int $runningShifts = 0,
+        public int $leaveDays = 0,
     ) {}
 
-    /** @param list<ShiftLine> $lines */
-    public static function forPerson(array $lines): self
+    /**
+     * @param  list<ShiftLine>  $lines
+     * @param  int  $leaveDays  workdays of approved leave in the month (docs/14 4.3); leave never changes the minutes
+     */
+    public static function forPerson(array $lines, int $leaveDays = 0): self
     {
         $minutes = fn (OvertimeStatus $status) => array_sum(array_map(
             fn (ShiftLine $l) => $l->overtimeStatus === $status ? $l->overtimeMinutes : 0,
@@ -53,6 +57,7 @@ final readonly class Totals
             lateClaims: $count(fn (ShiftLine $l) => $l->isLateClaim()),
             pendingShifts: $count(fn (ShiftLine $l) => $l->overtimeStatus === OvertimeStatus::Pending),
             runningShifts: $count(fn (ShiftLine $l) => $l->isRunning()),
+            leaveDays: $leaveDays,
         );
     }
 
@@ -87,6 +92,7 @@ final readonly class Totals
             'late_claims' => $this->lateClaims,
             'pending_shifts' => $this->pendingShifts,
             'running_shifts' => $this->runningShifts,
+            'leave_days' => $this->leaveDays,
         ];
     }
 }

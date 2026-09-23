@@ -9,6 +9,8 @@ export default {
         idle: 'Idle PC',
         desktop_sync: 'Desktop sync',
         web: 'Web attendance',
+        leave: 'Leave',
+        monitoring: 'Activity monitor',
     },
     group_intro: {
         work_hours: 'The daily limit and the 8-hour prompt.',
@@ -16,6 +18,8 @@ export default {
         idle: 'When the desktop app records a PC as idle.',
         desktop_sync: 'Signs of activity, interrupted shifts, offline sign-in, and PC clocks.',
         web: 'Clocking in from a browser, phones included.',
+        leave: 'Default yearly leave quota.',
+        monitoring: 'How long access records are kept.',
     },
     units: {
         minutes: 'minutes',
@@ -36,6 +40,8 @@ export default {
         calculation: 'Running shifts too',
         desktop: 'Used by the desktop app',
         web: 'Applies at once',
+        next_request: 'Used whenever a leave balance is counted',
+        daily: 'Applies at the next nightly cleanup',
     },
     new_shifts_note: 'Shifts already running keep :value.',
     on: 'On',
@@ -91,6 +97,18 @@ export default {
             late_claim_hours: {
                 label: 'Late overtime claim window',
                 help: 'After a shift or overtime is closed automatically, the person can file a late overtime claim for this long.',
+            },
+        },
+        leave: {
+            annual_quota_days: {
+                label: 'Annual leave quota',
+                help: 'Annual leave days per person per year when Superadmin has not set a quota for that person in Leave admin. Only leave types that count against the quota use it.',
+            },
+        },
+        monitoring: {
+            access_log_days: {
+                label: 'Keep access records for',
+                help: 'Sign-ins, pages opened, actions, and refused requests in the Activity monitor. Older records are deleted every night at 02:30. The audit log and attendance data are never deleted by this.',
             },
         },
         sync: {

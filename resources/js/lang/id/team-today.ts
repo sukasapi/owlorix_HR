@@ -10,6 +10,7 @@ export default {
         working: 'Masuk',
         idle: 'PC diam atau terputus',
         out: 'Sudah pulang',
+        leave: 'Cuti hari ini',
         not_started: 'Belum absen hari ini',
     },
     status: {
@@ -20,6 +21,7 @@ export default {
         idle: 'PC diam :duration, sejak :time',
         interrupted: 'Aplikasi terputus sejak :time',
         out: 'Pulang :time',
+        leave: 'Cuti (:type)',
         not_started: 'Belum absen',
     },
     idle_during_overtime: 'PC diam :duration',
@@ -33,6 +35,7 @@ export default {
     minutes: 'Reguler :regular, lembur :overtime',
     minutes_regular: 'Reguler :regular',
     needs_review: 'Perlu dicek',
+    on_leave_today: 'cuti hari ini (:type), tetap absen',
     empty: {
         no_team_title: 'Kamu belum memimpin tim.',
         no_team_body: 'Papan ini menampilkan anggota tim yang kamu pimpin. Minta Superadmin menjadikanmu Team Lead sebuah tim di halaman Tim.',

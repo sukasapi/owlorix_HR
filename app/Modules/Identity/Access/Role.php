@@ -20,6 +20,7 @@ enum Role: string
             Permission::ClockIn,
             Permission::ViewProjects,
             Permission::LogActivity,
+            Permission::RequestLeave,
         ];
 
         $management = [
@@ -30,19 +31,25 @@ enum Role: string
             Permission::ProposeCorrections,
             Permission::ViewTeamReports,
             Permission::ManageProjects,
+            Permission::ApproveLeave,
+            Permission::ViewWorkMonitor,
         ];
 
         return match ($this) {
             self::Employee => $work,
             self::TeamLead => $management,
-            self::ProjectManager => [...$management, Permission::ApproveAnyOvertime, Permission::OverseeProjects],
-            self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions, Permission::OverseeProjects],
+            self::ProjectManager => [...$management, Permission::ApproveAnyOvertime, Permission::OverseeProjects, Permission::ApproveAnyLeave, Permission::ManageBudgets],
+            self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions, Permission::OverseeProjects, Permission::ApproveAnyLeave, Permission::ManageBudgets, Permission::ManagePipeline],
             self::Superadmin => [
                 Permission::ClockIn,
                 Permission::ViewProjects,
                 Permission::ManageProjects,
                 Permission::OverseeProjects,
                 Permission::LogActivity,
+                Permission::RequestLeave,
+                Permission::ManageBudgets,
+                Permission::ManagePipeline,
+                Permission::ViewWorkMonitor,
                 Permission::ManageUsers,
                 Permission::ImpersonateUsers,
                 Permission::ManageTeams,
@@ -54,6 +61,8 @@ enum Role: string
                 Permission::ViewAllReports,
                 Permission::ExportReports,
                 Permission::ViewAuditLog,
+                Permission::ViewActivityMonitor,
+                Permission::ManageLeave,
             ],
         };
     }

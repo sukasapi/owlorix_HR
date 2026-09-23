@@ -138,7 +138,7 @@ it('refuses the preview and the shift list for people outside the scope', functi
         ->assertJsonPath('shifts.0.unavailable.overtime_ended_at', 'no_overtime');
 });
 
-it('shows Koreksi under Tim for Management and under Admin for Superadmin', function () {
+it('shows Koreksi under Tim for Management and under Pengaturan for Superadmin', function () {
     $keysIn = fn (User $user, string $group) => collect(collect($this->actingAs($user)->get(route('corrections.index'))->assertOk()
         ->viewData('page')['props']['nav'])->firstWhere('group', $group)['items'] ?? [])->pluck('key');
 

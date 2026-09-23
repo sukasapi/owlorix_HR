@@ -22,6 +22,10 @@ return [
         // Clock in and out from the web app as well as the desktop app (owner decision 2026-09-14, docs/02 3.11)
         'attendance.web_clock_in' => true,
         'app.timezone' => 'Asia/Jakarta',
+        // Days kept in access_logs for Monitor aktivitas (docs/14); the audit log is never pruned
+        'monitoring.access_log_days' => 365,
+        // Yearly annual-leave days when a person has no leave_quotas row (docs/14)
+        'leave.annual_quota_days' => 12,
     ],
 
     // Defaults for Pengaturan aplikasi (docs/13). Rows `branding.<key>` in the `settings` table override these.

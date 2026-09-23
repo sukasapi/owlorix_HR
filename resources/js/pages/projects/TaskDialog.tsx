@@ -4,13 +4,14 @@ import { useT } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { X } from '@phosphor-icons/react';
 import { type FormEvent, useId } from 'react';
-import type { PersonOption, TaskPriority } from './taskTypes';
+import { PHASES, type PersonOption, type StageOption, type TaskPriority } from './taskTypes';
 
 export interface TaskFormValues {
     id?: number;
     title: string;
     description: string | null;
     priority: TaskPriority;
+    stage_id: number | null;
     assignee_id: number | null;
     due_date: string | null;
     estimate_minutes: number | null;
@@ -27,16 +28,19 @@ interface Props {
     task?: TaskFormValues;
     people: PersonOption[];
     priorities: TaskPriority[];
+    /** Every pipeline stage; the picker offers active ones plus the task's own stage if it was switched off. */
+    stages: StageOption[];
     onClose: () => void;
 }
 
-export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, priorities, onClose }: Props) {
+export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, priorities, stages, onClose }: Props) {
     const t = useT();
     const titleId = useId();
     const form = useForm({
         title: task?.title ?? '',
         description: task?.description ?? '',
         priority: task?.priority ?? ('normal' as TaskPriority),
+        stage_id: task?.stage_id ? String(task.stage_id) : '',
         assignee_id: task?.assignee_id ? String(task.assignee_id) : '',
         due_date: task?.due_date ?? '',
         estimate_hours: task?.estimate_minutes ? String(Math.round((task.estimate_minutes / 60) * 100) / 100) : '',
@@ -48,6 +52,7 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
         form.transform((data) => ({
             ...data,
             assignee_id: data.assignee_id === '' ? null : Number(data.assignee_id),
+            stage_id: data.stage_id === '' ? null : Number(data.stage_id),
             due_date: data.due_date || null,
             estimate_hours: data.estimate_hours === '' ? null : data.estimate_hours,
         }));
@@ -55,6 +60,8 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
         if (mode === 'edit' && task?.id) form.put(route('tasks.update', task.id), options);
         else form.post(route('projects.tasks.store', [projectId, subProjectId]), options);
     };
+
+    const pickable = stages.filter((stage) => stage.is_active || stage.id === task?.stage_id);
 
     const heading = mode === 'edit' ? t('tasks.form.edit_title') : mode === 'propose' ? t('tasks.form.propose_title') : t('tasks.form.create_title');
     const submitLabel = mode === 'edit' ? t('tasks.form.submit_edit') : mode === 'propose' ? t('tasks.form.submit_propose') : t('tasks.form.submit_create');
@@ -94,6 +101,24 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
                         onChange={(e) => form.setData('description', e.target.value)}
                         error={form.errors.description}
                     />
+                    {pickable.length > 0 && (
+                        <SelectField label={t('tasks.form.stage')} help={t('tasks.form.stage_help')} value={form.data.stage_id} onChange={(e) => form.setData('stage_id', e.target.value)} error={form.errors.stage_id}>
+                            <option value="">{t('tasks.form.stage_none')}</option>
+                            {PHASES.map((phase) => {
+                                const inPhase = pickable.filter((stage) => stage.phase === phase);
+                                if (inPhase.length === 0) return null;
+                                return (
+                                    <optgroup key={phase} label={t(`pipeline.phase.${phase}`)}>
+                                        {inPhase.map((stage) => (
+                                            <option key={stage.id} value={stage.id}>
+                                                {stage.is_active ? stage.name : t('tasks.form.stage_inactive', { name: stage.name })}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                );
+                            })}
+                        </SelectField>
+                    )}
                     <div className="grid gap-[18px] sm:grid-cols-3">
                         <SelectField label={t('tasks.form.priority')} value={form.data.priority} onChange={(e) => form.setData('priority', e.target.value as TaskPriority)} error={form.errors.priority}>
                             {priorities.map((p) => (

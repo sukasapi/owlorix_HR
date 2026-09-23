@@ -60,6 +60,7 @@ export function TaskListItem({ task, showPlace = false, showStatus = true }: { t
                 )}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
                     <PriorityMark priority={task.priority} />
+                    {task.stage && <span>{t('tasks.list.stage', { name: task.stage.name })}</span>}
                     {task.due_date && (
                         <span className={`num ${overdue ? 'font-semibold text-danger' : ''}`}>
                             {overdue ? t('tasks.list.overdue', { date: formatShortDate(task.due_date, locale) }) : t('tasks.list.due', { date: formatShortDate(task.due_date, locale) })}

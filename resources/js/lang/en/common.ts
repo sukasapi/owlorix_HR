@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'My work', team: 'Team', admin: 'Admin', help: 'Help' },
+        groups: { my_work: 'My work', team: 'Team', production: 'Production', people: 'People and access', admin: 'Settings', oversight: 'Oversight', help: 'Help' },
         my_day: 'My day',
         history: 'History',
         overtime: 'Overtime',
@@ -20,8 +20,16 @@ export default {
         my_tasks: 'My tasks',
         activity_log: 'Work log',
         imposter: 'Imposter',
+        leave: 'Leave',
+        leave_approvals: 'Leave approvals',
+        work_monitor: 'Work monitor',
+        workload: 'Workload',
+        leave_admin: 'Leave',
+        pipeline: 'Production pipeline',
+        activity_monitor: 'Activity monitor',
         menu: 'Menu',
         main: 'Main navigation',
+        group_badge: ':count waiting in this group',
         close_menu: 'Close menu',
     },
     shell: {
@@ -54,6 +62,12 @@ export default {
         copied: 'Copied',
         retry: 'Try again',
         search: 'Search',
+    },
+    charts: {
+        show_table: 'Show as table',
+        hide_table: 'Hide table',
+        total: 'Total',
+        empty: 'No data for this chart yet.',
     },
     states: {
         loading: 'Loading...',

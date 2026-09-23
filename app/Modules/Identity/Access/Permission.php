@@ -23,6 +23,18 @@ enum Permission: string
     case LogActivity = 'activity.log';
     // Decide proposals and review evidence on every sub project, not only the ones a person leads
     case OverseeProjects = 'projects.oversee';
+    // Set and read hour budgets of projects and sub projects (docs/14)
+    case ManageBudgets = 'projects.budget';
+    // Studio production pipeline: the stages tasks move through (docs/14)
+    case ManagePipeline = 'pipeline.manage';
+
+    // Leave (docs/14): everyone who clocks in asks, a Team Lead decides for their team, PM and PD for anyone
+    case RequestLeave = 'leave.request';
+    case ApproveLeave = 'leave.approve';
+    case ApproveAnyLeave = 'leave.approve_any';
+
+    // Monitor kerja and Beban kerja; OverseeProjects widens the scope from own teams to the whole studio
+    case ViewWorkMonitor = 'monitoring.work';
 
     // Superadmin
     case ManageUsers = 'users.manage';
@@ -35,4 +47,8 @@ enum Permission: string
     case ViewAllReports = 'reports.view_all';
     case ExportReports = 'reports.export';
     case ViewAuditLog = 'audit.view';
+    // Monitor aktivitas: sign-ins, page visits, changes and clock events of everyone
+    case ViewActivityMonitor = 'monitoring.activity';
+    // Leave types, yearly quotas, and every request
+    case ManageLeave = 'leave.manage';
 }

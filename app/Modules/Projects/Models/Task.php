@@ -18,6 +18,7 @@ class Task extends Model
     protected $fillable = [
         'project_id',
         'sub_project_id',
+        'stage_id',
         'title',
         'description',
         'status',
@@ -53,6 +54,11 @@ class Task extends Model
     public function subProject(): BelongsTo
     {
         return $this->belongsTo(SubProject::class);
+    }
+
+    public function stage(): BelongsTo
+    {
+        return $this->belongsTo(PipelineStage::class, 'stage_id');
     }
 
     public function assignee(): BelongsTo

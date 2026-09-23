@@ -6,9 +6,11 @@ import { useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { NotePencil, Plus, Trash, X } from '@phosphor-icons/react';
+import { BudgetMeter, budgetHoursValue } from './BudgetMeter';
+import { type Milestone, type MilestoneKind, Milestones } from './Milestones';
 import { SubProjectDialog } from './SubProjectDialog';
 import { SubProjectList } from './SubProjectList';
-import type { PersonOption as LeadOption, SubProjectData } from './taskTypes';
+import type { BudgetData, PersonOption as LeadOption, SubProjectData } from './taskTypes';
 import { type FormEvent, useId, useState } from 'react';
 
 type ProjectStatus = 'planned' | 'active' | 'done';
@@ -48,6 +50,11 @@ interface PageProps {
     is_assigned: boolean;
     sub_projects: SubProjectData[];
     leads: LeadOption[];
+    milestones: Milestone[];
+    milestone_kinds: MilestoneKind[];
+    can_budget: boolean;
+    /** Only for people with projects.budget; absent for everyone else. */
+    budget?: BudgetData;
 }
 
 export default function ProjectShow() {
@@ -92,7 +99,25 @@ export default function ProjectShow() {
                 </div>
             </div>
 
-            <section className="mt-8" aria-labelledby="subs-heading">
+            {props.budget && (
+                <div className="mt-6 max-w-[560px]">
+                    <BudgetMeter
+                        budget={props.budget}
+                        source={t('projects.budget.source_project')}
+                        action={
+                            can_manage && (
+                                <button type="button" className="btn btn-quiet btn-sm min-h-11" onClick={() => setEditing(true)}>
+                                    {t('projects.budget.set')}
+                                </button>
+                            )
+                        }
+                    />
+                </div>
+            )}
+
+            <Milestones projectId={project.id} items={props.milestones} kinds={props.milestone_kinds} canManage={can_manage} />
+
+            <section className="mt-10" aria-labelledby="subs-heading">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div className="min-w-0">
                         <h2 id="subs-heading" className="h2">
@@ -140,8 +165,10 @@ export default function ProjectShow() {
                 )}
             </section>
 
-            {can_manage && editing && <EditProjectDialog project={project} statuses={props.statuses} onClose={() => setEditing(false)} />}
-            {can_manage && creatingSub && <SubProjectDialog projectId={project.id} leads={props.leads} statuses={props.statuses} onClose={() => setCreatingSub(false)} />}
+            {can_manage && editing && <EditProjectDialog project={project} statuses={props.statuses} budgetMinutes={props.budget?.minutes} onClose={() => setEditing(false)} />}
+            {can_manage && creatingSub && (
+                <SubProjectDialog projectId={project.id} leads={props.leads} statuses={props.statuses} budgetMinutes={props.can_budget ? null : undefined} onClose={() => setCreatingSub(false)} />
+            )}
         </AppShell>
     );
 }
@@ -185,19 +212,23 @@ function AssignForm({ projectId, people }: { projectId: number; people: PersonOp
     );
 }
 
-function EditProjectDialog({ project, statuses, onClose }: { project: ProjectDetail; statuses: ProjectStatus[]; onClose: () => void }) {
+/** `budgetMinutes` is passed only to people with projects.budget; without it the budget field is not shown or sent. */
+function EditProjectDialog({ project, statuses, budgetMinutes, onClose }: { project: ProjectDetail; statuses: ProjectStatus[]; budgetMinutes?: number | null; onClose: () => void }) {
     const t = useT();
     const titleId = useId();
+    const canBudget = budgetMinutes !== undefined;
     const form = useForm({
         name: project.name,
         code: project.code ?? '',
         status: project.status,
         description: project.description ?? '',
+        budget_hours: budgetHoursValue(budgetMinutes),
     });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.put(route('projects.update', project.id), { onSuccess: onClose });
+        form.transform(({ budget_hours, ...data }) => ({ ...data, ...(canBudget ? { budget_hours: budget_hours === '' ? null : budget_hours } : {}) }));
+        form.put(route('projects.update', project.id), { preserveScroll: true, onSuccess: onClose });
     };
 
     return (
@@ -221,6 +252,21 @@ function EditProjectDialog({ project, statuses, onClose }: { project: ProjectDet
                             </option>
                         ))}
                     </SelectField>
+                    {canBudget && (
+                        <TextField
+                            label={t('projects.budget.field')}
+                            name="budget_hours"
+                            help={t('projects.budget.field_help')}
+                            type="number"
+                            inputMode="decimal"
+                            min={0.25}
+                            max={99999}
+                            step={0.25}
+                            value={form.data.budget_hours}
+                            onChange={(e) => form.setData('budget_hours', e.target.value)}
+                            error={form.errors.budget_hours}
+                        />
+                    )}
                     <TextAreaField label={t('projects.form.description')} name="description" rows={3} maxLength={2000} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} error={form.errors.description} />
                 </div>
                 <footer className="flex justify-end gap-2.5 border-t border-line px-5 py-3.5 sm:px-7">

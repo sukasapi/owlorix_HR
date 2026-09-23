@@ -189,7 +189,7 @@ function ColumnLegend() {
         <details className="text-sm">
             <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-sm font-semibold text-teal-text underline underline-offset-4">{t('reports.legend.toggle')}</summary>
             <ul className="m-0 mt-1 flex max-w-[80ch] list-disc flex-col gap-1 pl-5 text-muted">
-                {(['days_worked', 'regular', 'overtime', 'idle', 'short_days', 'non_workday', 'review', 'late_claims'] as const).map((key) => (
+                {(['days_worked', 'leave_days', 'regular', 'overtime', 'idle', 'short_days', 'non_workday', 'review', 'late_claims'] as const).map((key) => (
                     <li key={key}>{t(`reports.legend.${key}`)}</li>
                 ))}
             </ul>

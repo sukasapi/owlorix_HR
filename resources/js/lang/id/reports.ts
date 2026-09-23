@@ -45,6 +45,7 @@ export default {
     columns: {
         name: 'Nama',
         days_worked: 'Hari kerja',
+        leave_days: 'Hari cuti',
         regular: 'Jam reguler',
         approved: 'Lembur disetujui',
         pending: 'Lembur menunggu',
@@ -59,6 +60,7 @@ export default {
     legend: {
         toggle: 'Arti kolom',
         days_worked: 'Hari kerja: tanggal dengan minimal satu shift.',
+        leave_days: 'Hari cuti: hari kerja dengan cuti atau izin yang disetujui, semua jenis. Di bulan yang masih berjalan, dihitung sampai hari ini. Cuti tidak mengubah jam reguler atau lembur.',
         regular: 'Jam reguler: kerja sampai 8 jam per tanggal kerja, dihitung dari absen masuk, tanpa potongan istirahat.',
         overtime: 'Lembur disetujui, menunggu, dan ditolak dijumlah terpisah dan tidak pernah digabung.',
         idle: 'PC diam: waktu tanpa input keyboard atau mouse. Dicatat, tidak dipotong.',

@@ -9,6 +9,8 @@ export default {
         idle: 'PC diam',
         desktop_sync: 'Sinkron desktop',
         web: 'Presensi web',
+        leave: 'Cuti',
+        monitoring: 'Monitor aktivitas',
     },
     group_intro: {
         work_hours: 'Batas harian dan pengingat 8 jam.',
@@ -16,6 +18,8 @@ export default {
         idle: 'Kapan aplikasi desktop mencatat PC sedang diam.',
         desktop_sync: 'Tanda aktif, shift terputus, masuk tanpa internet, dan jam PC.',
         web: 'Absen dari browser, termasuk dari HP.',
+        leave: 'Kuota cuti tahunan bawaan.',
+        monitoring: 'Berapa lama catatan akses disimpan.',
     },
     units: {
         minutes: 'menit',
@@ -36,6 +40,8 @@ export default {
         calculation: 'Juga shift berjalan',
         desktop: 'Dipakai aplikasi desktop',
         web: 'Langsung berlaku',
+        next_request: 'Dipakai saat saldo cuti dihitung',
+        daily: 'Berlaku di pembersihan malam berikutnya',
     },
     new_shifts_note: 'Shift yang sedang berjalan tetap memakai :value.',
     on: 'Nyala',
@@ -91,6 +97,18 @@ export default {
             late_claim_hours: {
                 label: 'Batas klaim lembur susulan',
                 help: 'Setelah shift atau lembur ditutup otomatis, orangnya bisa mengajukan klaim lembur susulan selama waktu ini.',
+            },
+        },
+        leave: {
+            annual_quota_days: {
+                label: 'Kuota cuti tahunan',
+                help: 'Jatah hari cuti tahunan per orang per tahun bila Superadmin belum mengatur kuota khusus orang itu di Admin cuti. Hanya jenis cuti yang memotong kuota yang dihitung.',
+            },
+        },
+        monitoring: {
+            access_log_days: {
+                label: 'Simpan catatan akses selama',
+                help: 'Catatan masuk, halaman yang dibuka, aksi, dan akses ditolak di Monitor aktivitas. Yang lebih lama dihapus setiap malam pukul 02.30. Log audit dan data absensi tidak ikut dihapus.',
             },
         },
         sync: {

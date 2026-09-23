@@ -1,6 +1,6 @@
 export default {
     nav: {
-        groups: { my_work: 'Kerja saya', team: 'Tim', admin: 'Admin', help: 'Bantuan' },
+        groups: { my_work: 'Kerja saya', team: 'Tim', production: 'Produksi', people: 'Orang & akses', admin: 'Pengaturan', oversight: 'Pantauan', help: 'Bantuan' },
         my_day: 'Hari ini',
         history: 'Riwayat',
         overtime: 'Lembur',
@@ -20,8 +20,16 @@ export default {
         my_tasks: 'Tugas saya',
         activity_log: 'Log kerja',
         imposter: 'Imposter',
+        leave: 'Cuti & izin',
+        leave_approvals: 'Persetujuan cuti',
+        work_monitor: 'Monitor kerja',
+        workload: 'Beban kerja',
+        leave_admin: 'Cuti & izin',
+        pipeline: 'Pipeline produksi',
+        activity_monitor: 'Monitor aktivitas',
         menu: 'Menu',
         main: 'Navigasi utama',
+        group_badge: ':count menunggu di grup ini',
         close_menu: 'Tutup menu',
     },
     shell: {
@@ -54,6 +62,12 @@ export default {
         copied: 'Tersalin',
         retry: 'Coba lagi',
         search: 'Cari',
+    },
+    charts: {
+        show_table: 'Lihat sebagai tabel',
+        hide_table: 'Sembunyikan tabel',
+        total: 'Total',
+        empty: 'Belum ada data untuk grafik ini.',
     },
     states: {
         loading: 'Memuat...',

@@ -14,7 +14,7 @@ describe('authorization', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/teams/Index')
-                ->where('nav', fn ($nav) => collect($nav)->firstWhere('group', 'admin')['items'][1]['key'] === 'teams'));
+                ->where('nav', fn ($nav) => collect($nav)->firstWhere('group', 'people')['items'][1]['key'] === 'teams'));
     });
 
     it('refuses employees and management on every team route', function (Role $role) {

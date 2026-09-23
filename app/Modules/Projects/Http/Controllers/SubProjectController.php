@@ -12,6 +12,7 @@ use App\Modules\Projects\Http\Requests\SubProjectRequest;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Services\HourBudget;
 use App\Modules\Projects\Services\TaskPresenter;
 use App\Modules\Shared\Audit\Auditor;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,7 @@ use Inertia\Response;
 /** Sub projects inside a project, and the task list of one sub project (docs/13). */
 class SubProjectController extends Controller
 {
-    public function show(Request $request, Project $project, SubProject $subProject): Response
+    public function show(Request $request, Project $project, SubProject $subProject, HourBudget $budgets): Response
     {
         Gate::authorize('view', $project);
 
@@ -35,7 +36,7 @@ class SubProjectController extends Controller
 
         $tasks = Task::query()
             ->withLoggedMinutes()
-            ->with(['assignee', 'creator'])
+            ->with(['stage', 'assignee', 'creator'])
             ->where('sub_project_id', $subProject->id)
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
             ->orderByRaw('due_date is null, due_date')
@@ -43,7 +44,13 @@ class SubProjectController extends Controller
             ->get()
             ->map(fn (Task $task) => TaskPresenter::row($task));
 
+        // Budget numbers only reach people with projects.budget; for everyone else the key is absent (docs/14 3.3)
+        $budget = HourBudget::canSee($user)
+            ? ['budget' => HourBudget::view($subProject->budget_minutes, $budgets->loggedForSubProject($subProject->id))]
+            : [];
+
         return Inertia::render('projects/SubProject', [
+            ...$budget,
             'project' => ['id' => $project->id, 'name' => $project->name, 'code' => $project->code, 'status' => $project->status->value],
             'sub_project' => TaskPresenter::subProject($subProject),
             'tasks' => $tasks,
@@ -52,7 +59,9 @@ class SubProjectController extends Controller
                 'lead' => $isLead,
                 'create_task' => Gate::allows('createTask', $subProject),
                 'propose_task' => Gate::allows('proposeTask', $subProject),
+                'budget' => HourBudget::canSee($user),
             ],
+            'stages' => TaskPresenter::stageOptions(),
             'people' => $isLead ? $this->people() : [],
             'leads' => Gate::allows('update', $subProject) ? $this->leadOptions() : [],
             'statuses' => array_map(fn (ProjectStatus $s) => $s->value, ProjectStatus::cases()),
@@ -69,18 +78,22 @@ class SubProjectController extends Controller
         $data = $request->validated();
         $this->ensureLead($data['lead_user_id'] ?? null);
 
-        $subProject = DB::transaction(function () use ($project, $data, $auditor) {
+        $budget = HourBudget::submitted($request->user(), $data) ? HourBudget::minutesFromHours($data['budget_hours']) : null;
+
+        $subProject = DB::transaction(function () use ($project, $data, $budget, $auditor) {
             $subProject = $project->subProjects()->create([
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'status' => $data['status'],
                 'lead_user_id' => $data['lead_user_id'] ?? null,
                 'due_date' => $data['due_date'] ?? null,
+                'budget_minutes' => $budget,
             ]);
             $auditor->record('sub_project.created', $subProject, null, [
                 'project_id' => $project->id,
                 'name' => $subProject->name,
                 'lead_user_id' => $subProject->lead_user_id,
+                'budget_minutes' => $subProject->budget_minutes,
             ]);
 
             return $subProject;
@@ -97,15 +110,23 @@ class SubProjectController extends Controller
         $data = $request->validated();
         $this->ensureLead($data['lead_user_id'] ?? null);
 
-        DB::transaction(function () use ($subProject, $data, $auditor) {
-            $before = $subProject->only(['name', 'description', 'status', 'lead_user_id', 'due_date']);
+        $setBudget = HourBudget::submitted($request->user(), $data);
+
+        DB::transaction(function () use ($subProject, $data, $setBudget, $auditor) {
+            $before = $subProject->only(['name', 'description', 'status', 'lead_user_id', 'due_date', 'budget_minutes']);
             $subProject->forceFill([
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'status' => $data['status'],
                 'lead_user_id' => $data['lead_user_id'] ?? null,
                 'due_date' => $data['due_date'] ?? null,
-            ])->save();
+            ]);
+
+            if ($setBudget) {
+                $subProject->budget_minutes = HourBudget::minutesFromHours($data['budget_hours']);
+            }
+
+            $subProject->save();
             $auditor->record('sub_project.updated', $subProject, [
                 ...$before,
                 'status' => $before['status']?->value,
@@ -116,6 +137,7 @@ class SubProjectController extends Controller
                 'status' => $subProject->status->value,
                 'lead_user_id' => $subProject->lead_user_id,
                 'due_date' => $subProject->due_date?->format('Y-m-d'),
+                'budget_minutes' => $subProject->budget_minutes,
             ]);
         });
 
