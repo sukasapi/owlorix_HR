@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
+use App\Modules\Projects\Enums\MilestoneKind;
 use App\Modules\Projects\Enums\ProjectStatus;
 use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Http\Requests\AssignProjectMemberRequest;
@@ -13,8 +14,10 @@ use App\Modules\Projects\Http\Requests\StoreProjectRequest;
 use App\Modules\Projects\Http\Requests\UpdateProjectRequest;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectMember;
+use App\Modules\Projects\Models\ProjectMilestone;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Services\HourBudget;
 use App\Modules\Projects\Services\TaskInbox;
 use App\Modules\Projects\Services\TaskPresenter;
 use App\Modules\Projects\Services\TaskTimer;
@@ -45,11 +48,12 @@ class ProjectController extends Controller
         return Inertia::render('projects/Index', [
             'projects' => $projects,
             'can_manage' => $canManage,
+            'can_budget' => HourBudget::canSee($request->user()),
             'statuses' => array_map(fn (ProjectStatus $s) => $s->value, ProjectStatus::cases()),
         ]);
     }
 
-    public function show(Request $request, Project $project): Response
+    public function show(Request $request, Project $project, HourBudget $budgets): Response
     {
         Gate::authorize('view', $project);
 
@@ -85,7 +89,18 @@ class ProjectController extends Controller
                 'tasks_waiting' => $sub->tasks_waiting,
             ]);
 
+        $today = ProjectMilestone::studioToday();
+        $milestones = $project->milestones()->orderBy('due_date')->orderBy('id')->get()
+            ->map(fn (ProjectMilestone $m) => TaskPresenter::milestone($m, $today))
+            ->values();
+
+        // Budget numbers only reach people with projects.budget; for everyone else the key is absent (docs/14 3.3)
+        $budget = HourBudget::canSee($request->user())
+            ? ['budget' => HourBudget::view($project->budget_minutes, $budgets->loggedForProject($project->id))]
+            : [];
+
         return Inertia::render('projects/Show', [
+            ...$budget,
             'project' => [
                 ...$this->row($project),
                 'description' => $project->description,
@@ -100,6 +115,9 @@ class ProjectController extends Controller
                 ])->values(),
             ],
             'sub_projects' => $subProjects,
+            'milestones' => $milestones,
+            'milestone_kinds' => array_map(fn (MilestoneKind $k) => $k->value, MilestoneKind::cases()),
+            'can_budget' => HourBudget::canSee($request->user()),
             'leads' => $request->user()->hasPermission(Permission::ManageProjects)
                 ? User::query()->active()->permission(Permission::ManageProjects->value)->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
                     ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])->values()
@@ -122,11 +140,13 @@ class ProjectController extends Controller
                 'code' => $data['code'] ?: null,
                 'status' => $data['status'],
                 'description' => $data['description'] ?? null,
+                'budget_minutes' => HourBudget::submitted($request->user(), $data) ? HourBudget::minutesFromHours($data['budget_hours']) : null,
             ]);
             $auditor->record('project.created', $project, null, [
                 'name' => $project->name,
                 'code' => $project->code,
                 'status' => $project->status->value,
+                'budget_minutes' => $project->budget_minutes,
             ]);
 
             return $project;
@@ -146,6 +166,7 @@ class ProjectController extends Controller
                 'code' => $project->code,
                 'status' => $project->status->value,
                 'description' => $project->description,
+                'budget_minutes' => $project->budget_minutes,
             ];
             $data = $request->validated();
             $project->forceFill([
@@ -153,13 +174,20 @@ class ProjectController extends Controller
                 'code' => $data['code'] ?: null,
                 'status' => $data['status'],
                 'description' => $data['description'] ?? null,
-            ])->save();
+            ]);
+
+            if (HourBudget::submitted($request->user(), $data)) {
+                $project->budget_minutes = HourBudget::minutesFromHours($data['budget_hours']);
+            }
+
+            $project->save();
 
             $after = [
                 'name' => $project->name,
                 'code' => $project->code,
                 'status' => $project->status->value,
                 'description' => $project->description,
+                'budget_minutes' => $project->budget_minutes,
             ];
             $auditor->record('project.updated', $project, $before, $after);
         });
@@ -223,7 +251,7 @@ class ProjectController extends Controller
         Gate::authorize('viewAny', Project::class);
 
         $user = $request->user();
-        $withPlace = ['project', 'subProject', 'assignee', 'creator'];
+        $withPlace = ['project', 'subProject', 'stage', 'assignee', 'creator'];
 
         $myTasks = Task::query()
             ->withLoggedMinutes()

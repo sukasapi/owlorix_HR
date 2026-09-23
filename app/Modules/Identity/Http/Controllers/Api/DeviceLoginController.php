@@ -8,6 +8,8 @@ use App\Modules\Attendance\Support\Time;
 use App\Modules\Identity\Auth\AccountLookup;
 use App\Modules\Identity\Auth\LoginThrottle;
 use App\Modules\Identity\Models\Device;
+use App\Modules\Monitoring\Enums\AccessEvent;
+use App\Modules\Monitoring\Services\AccessRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +27,7 @@ class DeviceLoginController extends Controller
 {
     private const REQUESTS_PER_MINUTE_PER_IP = 600;
 
-    public function __invoke(Request $request, LoginThrottle $throttle, RateLimiter $limiter): JsonResponse
+    public function __invoke(Request $request, LoginThrottle $throttle, RateLimiter $limiter, AccessRecorder $access): JsonResponse
     {
         $ipKey = 'device-login:'.$request->ip();
 
@@ -51,21 +53,31 @@ class DeviceLoginController extends Controller
         $account = AccountLookup::throttleKey($identifier, $user);
         $wait = $throttle->secondsUntilAllowed($account, $request->ip());
 
+        // Monitor aktivitas: the account's username, or the typed text masked when it matches no account; never the password
+        $failed = fn (AccessEvent $event) => $access->record($event, $request, $user?->id, ['username' => AccountLookup::logName($identifier, $user), 'device_id' => $data['device_id']]);
+
         if ($wait > 0) {
+            $failed(AccessEvent::LockedOut);
+
             return ApiError::response(429, 'throttled', __('auth.throttle_minutes', ['minutes' => (int) ceil($wait / 60)]), ['Retry-After' => $wait]);
         }
 
         if ($user === null || ! Hash::check($data['password'], $user->password)) {
             $throttle->recordFailure($account, $request->ip());
+            $failed(AccessEvent::DeviceSignInFailed);
 
             throw ValidationException::withMessages(['username' => __('auth.failed')]);
         }
 
         if (! $user->isActive()) {
+            $failed(AccessEvent::DeviceSignInFailed);
+
             return ApiError::response(403, 'inactive', __('auth.inactive'));
         }
 
         if (Device::query()->find($data['device_id'])?->isRevoked()) {
+            $failed(AccessEvent::DeviceSignInFailed);
+
             return ApiError::response(403, 'device_revoked', __('auth.device_revoked'));
         }
 
@@ -86,6 +98,8 @@ class DeviceLoginController extends Controller
 
             return $user->createToken($device->id)->plainTextToken;
         });
+
+        $access->record(AccessEvent::DeviceSignIn, $request, $user->id, ['device_id' => $data['device_id']]);
 
         return response()->json([
             'token' => $token,

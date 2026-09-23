@@ -20,6 +20,8 @@ interface ProjectRow {
 interface PageProps {
     projects: ProjectRow[];
     can_manage: boolean;
+    /** projects.budget: the create form shows the hour budget field */
+    can_budget: boolean;
     statuses: ProjectStatus[];
 }
 
@@ -108,12 +110,12 @@ export default function ProjectsIndex() {
                 )}
             </div>
 
-            {props.can_manage && <CreateProjectDialog open={creating} statuses={props.statuses} onClose={() => setCreating(false)} />}
+            {props.can_manage && <CreateProjectDialog open={creating} statuses={props.statuses} canBudget={props.can_budget} onClose={() => setCreating(false)} />}
         </AppShell>
     );
 }
 
-function CreateProjectDialog({ open, statuses, onClose }: { open: boolean; statuses: ProjectStatus[]; onClose: () => void }) {
+function CreateProjectDialog({ open, statuses, canBudget, onClose }: { open: boolean; statuses: ProjectStatus[]; canBudget: boolean; onClose: () => void }) {
     const t = useT();
     const titleId = useId();
     const form = useForm({
@@ -121,10 +123,12 @@ function CreateProjectDialog({ open, statuses, onClose }: { open: boolean; statu
         code: '',
         status: 'active' as ProjectStatus,
         description: '',
+        budget_hours: '',
     });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        form.transform(({ budget_hours, ...data }) => ({ ...data, ...(canBudget ? { budget_hours: budget_hours === '' ? null : budget_hours } : {}) }));
         form.post(route('projects.store'), { onSuccess: onClose });
     };
 
@@ -146,6 +150,21 @@ function CreateProjectDialog({ open, statuses, onClose }: { open: boolean; statu
                             </option>
                         ))}
                     </SelectField>
+                    {canBudget && (
+                        <TextField
+                            label={t('projects.budget.field')}
+                            name="budget_hours"
+                            help={t('projects.budget.field_help')}
+                            type="number"
+                            inputMode="decimal"
+                            min={0.25}
+                            max={99999}
+                            step={0.25}
+                            value={form.data.budget_hours}
+                            onChange={(e) => form.setData('budget_hours', e.target.value)}
+                            error={form.errors.budget_hours}
+                        />
+                    )}
                     <TextAreaField label={t('projects.form.description')} name="description" rows={3} maxLength={2000} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} error={form.errors.description} />
                 </div>
                 <footer className="flex justify-end gap-2.5 border-t border-line px-5 py-3.5 sm:px-7">

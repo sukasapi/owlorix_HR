@@ -3,10 +3,13 @@
 namespace App\Modules\Projects\Services;
 
 use App\Modules\Identity\Models\User;
+use App\Modules\Projects\Models\PipelineStage;
+use App\Modules\Projects\Models\ProjectMilestone;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
 use App\Modules\Projects\Models\TaskSubmission;
 use App\Modules\Projects\Models\TaskWorkSession;
+use Carbon\CarbonImmutable;
 
 /** Arrays sent to the task pages. Only names, initials, and photo links of people; nothing private. */
 class TaskPresenter
@@ -34,6 +37,7 @@ class TaskPresenter
             'title' => $task->title,
             'status' => $task->status->value,
             'priority' => $task->priority->value,
+            'stage' => self::stage($task->stage),
             'due_date' => $task->due_date?->format('Y-m-d'),
             'estimate_minutes' => $task->estimate_minutes,
             'evidence_required' => $task->evidence_required,
@@ -52,6 +56,48 @@ class TaskPresenter
             ...self::row($task),
             'project' => $task->project ? ['id' => $task->project->id, 'name' => $task->project->name, 'code' => $task->project->code] : null,
             'sub_project' => $task->subProject ? ['id' => $task->subProject->id, 'name' => $task->subProject->name] : null,
+        ];
+    }
+
+    /** @return array{id: int, name: string, phase: string, is_active: bool}|null */
+    public static function stage(?PipelineStage $stage): ?array
+    {
+        if ($stage === null) {
+            return null;
+        }
+
+        return ['id' => $stage->id, 'name' => $stage->name, 'phase' => $stage->phase->value, 'is_active' => $stage->is_active];
+    }
+
+    /**
+     * Every stage in pipeline order, for the stage picker and filter. Inactive ones are included so a task keeps
+     * showing its stage; the picker offers them only to the task that already has one.
+     *
+     * @return list<array{id: int, name: string, phase: string, is_active: bool}>
+     */
+    public static function stageOptions(): array
+    {
+        return PipelineStage::query()->ordered()->get()->map(fn (PipelineStage $s) => self::stage($s))->values()->all();
+    }
+
+    /**
+     * One milestone. `status` is worked out on read (done, overdue, soon, scheduled); `days_until` is negative once
+     * the date has passed.
+     *
+     * @return array<string, mixed>
+     */
+    public static function milestone(ProjectMilestone $milestone, CarbonImmutable $today): array
+    {
+        return [
+            'id' => $milestone->id,
+            'project_id' => $milestone->project_id,
+            'name' => $milestone->name,
+            'kind' => $milestone->kind->value,
+            'due_date' => $milestone->due_date->format('Y-m-d'),
+            'done_at' => $milestone->done_at?->toIso8601String(),
+            'note' => $milestone->note,
+            'status' => $milestone->statusOn($today)->value,
+            'days_until' => $milestone->daysUntil($today),
         ];
     }
 

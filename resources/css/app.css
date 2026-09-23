@@ -65,6 +65,21 @@
   --eye-outline: #1a1a2e;
   --eye-lid: #1e4461;
 
+  /*
+   * Chart colors (docs/14). Checked with the dataviz validator against the card surface of each theme:
+   * categorical --viz-1..3 pass all-pairs CVD and normal-vision floors, so a chart carries at most three series.
+   * --viz-step-1..4 is one teal ramp for ordered stages (not started, working, review, done).
+   */
+  --viz-1: #00809a;
+  --viz-2: #b8841c;
+  --viz-3: #7a4fc4;
+  --viz-step-1: #7fbccb;
+  --viz-step-2: #4a9fb2;
+  --viz-step-3: #1a7f94;
+  --viz-step-4: #0d5566;
+  --viz-grid: #eceae3;
+  --viz-axis: #cfcabc;
+
   --r-brow: 24px 24px 8px 8px;
   --shadow-float: 0 18px 40px -12px rgb(26 26 46 / 0.35), 0 2px 6px rgb(26 26 46 / 0.12);
 
@@ -90,6 +105,16 @@
   --panel: #1b2b45;
   --selected: #1b2b45;
   --heading: #edeff5;
+
+  --viz-1: #2a9ab0;
+  --viz-2: #b8862a;
+  --viz-3: #9274e0;
+  --viz-step-1: #2c6170;
+  --viz-step-2: #3f8a9b;
+  --viz-step-3: #5caec0;
+  --viz-step-4: #94d3df;
+  --viz-grid: #262943;
+  --viz-axis: #3a3e5c;
 
   --eye-brow: #5ba6b4;
   --eye-outline: #10121f;
@@ -381,6 +406,29 @@
     background: var(--selected);
     font-weight: 650;
     box-shadow: inset 3px 0 0 var(--eye-brow);
+  }
+
+  /* Chart tooltip: floats over the plot, so it carries the float shadow. */
+  .viz-tip {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    min-width: 140px;
+    max-width: 240px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 13px;
+    box-shadow: var(--shadow-float);
+  }
+  .viz-key {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
   }
 
   /* Only layers that float over content carry a shadow (DESIGN.md, Layout). */

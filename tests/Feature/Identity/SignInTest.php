@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Identity\Access\Role;
+use App\Modules\Identity\Auth\AccountLookup;
 use App\Modules\Identity\Models\User;
 use App\Modules\Shared\Settings\Settings;
 
@@ -96,6 +97,22 @@ it('counts failures on the email and the username of one person together', funct
         ->assertSessionHasErrors('username');
 
     $this->assertGuest();
+});
+
+it('locks out text that matches no account without keeping the text in the cache', function () {
+    $typed = 'Sandi-Salah-Kotak 2026';
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post(route('sign-in.store'), ['username' => $typed, 'password' => 'anything']);
+    }
+
+    $this->post(route('sign-in.store'), ['username' => '  '.strtoupper($typed), 'password' => 'anything'])
+        ->assertSessionHasErrors(['username' => __('auth.throttle_minutes', ['minutes' => 1])]);
+
+    $key = AccountLookup::throttleKey($typed, null);
+    expect($key)->toStartWith('unknown#')->not->toContain(strtolower($typed))
+        ->and(cache()->has('login:failures:'.$key))->toBeTrue()
+        ->and(cache()->has('login:failures:'.strtolower($typed)))->toBeFalse();
 });
 
 it('lets the username try again after the wait', function () {

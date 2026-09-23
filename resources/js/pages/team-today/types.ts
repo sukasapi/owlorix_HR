@@ -1,7 +1,7 @@
 import type { EyeState } from '@/components/owl/OwlEyes';
 
-export type BoardGroup = 'attention' | 'overtime' | 'working' | 'idle' | 'out' | 'not_started';
-export type BoardStatus = 'prompted' | 'report_due' | 'overtime' | 'open' | 'idle' | 'interrupted' | 'out' | 'not_started';
+export type BoardGroup = 'attention' | 'overtime' | 'working' | 'idle' | 'out' | 'leave' | 'not_started';
+export type BoardStatus = 'prompted' | 'report_due' | 'overtime' | 'open' | 'idle' | 'interrupted' | 'out' | 'leave' | 'not_started';
 
 export interface BoardPerson {
     id: number;
@@ -22,6 +22,8 @@ export interface BoardPerson {
         tag: 'rendering' | 'meeting' | 'break' | 'other' | null;
     } | null;
     needs_review: boolean;
+    /** Approved leave today (docs/14); someone who clocks in anyway shows by their shift */
+    leave: { type: string } | null;
 }
 
 export interface Board {

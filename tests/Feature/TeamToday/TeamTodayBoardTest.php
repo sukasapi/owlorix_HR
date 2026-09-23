@@ -199,7 +199,7 @@ test('polling reloads only the board prop with a fresh update time', function ()
         ->and($response->json('props.board.date'))->toBe('2026-09-14')
         ->and(array_keys($response->json('props.board.people.0')))->toBe([
             'id', 'name', 'initials', 'team_ids', 'teams', 'group', 'status', 'eyes', 'since', 'device',
-            'regular_minutes', 'overtime_minutes', 'idle', 'needs_review',
+            'regular_minutes', 'overtime_minutes', 'idle', 'needs_review', 'leave',
         ]);
 });
 

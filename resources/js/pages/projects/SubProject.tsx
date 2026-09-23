@@ -2,24 +2,43 @@ import AppShell from '@/layouts/AppShell';
 import { formatShortDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
+import { SelectField } from '@/components/ui/Field';
 import { Link, usePage } from '@inertiajs/react';
 import { Plus } from '@phosphor-icons/react';
 import { useId, useState } from 'react';
+import { BudgetMeter } from './BudgetMeter';
 import { SubProjectDialog } from './SubProjectDialog';
 import { PersonLine, TaskListItem } from './TaskBits';
 import { TaskDialog } from './TaskDialog';
-import { type PersonOption, type ProjectStatus, STATUS_ORDER, type SubProjectData, type TaskPriority, type TaskRow, type TaskStatus } from './taskTypes';
+import {
+    type BudgetData,
+    PHASES,
+    type PersonOption,
+    type ProjectStatus,
+    type StageOption,
+    STATUS_ORDER,
+    type SubProjectData,
+    type TaskPriority,
+    type TaskRow,
+    type TaskStatus,
+} from './taskTypes';
 
 interface PageProps {
     project: { id: number; name: string; code: string | null; status: ProjectStatus };
     sub_project: SubProjectData;
     tasks: TaskRow[];
-    can: { manage: boolean; lead: boolean; create_task: boolean; propose_task: boolean };
+    can: { manage: boolean; lead: boolean; create_task: boolean; propose_task: boolean; budget: boolean };
     people: PersonOption[];
     leads: PersonOption[];
     statuses: ProjectStatus[];
     priorities: TaskPriority[];
+    stages: StageOption[];
+    /** Only for people with projects.budget; absent for everyone else. */
+    budget?: BudgetData;
 }
+
+/** 'all', 'none' (tasks without a stage), or a stage id as text */
+type StageFilter = string;
 
 /**
  * One sub project: tasks grouped by where they stand, decisions first (DESIGN.md: focal point is what needs an answer).
@@ -32,8 +51,15 @@ export default function SubProjectShow() {
     const { project, sub_project: sub, tasks, can } = props;
     const [dialog, setDialog] = useState<'task' | 'edit' | null>(null);
     const [showRejected, setShowRejected] = useState(false);
+    const [stageFilter, setStageFilter] = useState<StageFilter>('all');
 
-    const byStatus = (status: TaskStatus) => tasks.filter((task) => task.status === status);
+    // The filter lists only stages that tasks here use, in pipeline order
+    const usedIds = new Set(tasks.map((task) => task.stage?.id).filter((id): id is number => id !== undefined));
+    const usedStages = props.stages.filter((stage) => usedIds.has(stage.id));
+    const hasUnstaged = tasks.some((task) => task.stage === null);
+    const visible = tasks.filter((task) => (stageFilter === 'all' ? true : stageFilter === 'none' ? task.stage === null : String(task.stage?.id) === stageFilter));
+
+    const byStatus = (status: TaskStatus) => visible.filter((task) => task.status === status);
     const rejected = byStatus('rejected');
     const canAdd = can.create_task || can.propose_task;
     const closed = sub.status === 'done' || project.status === 'done';
@@ -75,6 +101,22 @@ export default function SubProjectShow() {
                 </div>
             </div>
 
+            {props.budget && (
+                <div className="mt-5 max-w-[560px]">
+                    <BudgetMeter
+                        budget={props.budget}
+                        source={t('projects.budget.source_sub')}
+                        action={
+                            can.manage && (
+                                <button type="button" className="btn btn-quiet btn-sm min-h-11" onClick={() => setDialog('edit')}>
+                                    {t('projects.budget.set')}
+                                </button>
+                            )
+                        }
+                    />
+                </div>
+            )}
+
             <p className="m-0 mt-4 max-w-[70ch] text-sm">
                 {closed ? t('tasks.list.closed_note') : can.create_task ? t('tasks.list.lead_hint') : can.propose_task ? t('tasks.list.propose_hint') : t('tasks.list.cannot_propose')}
             </p>
@@ -86,6 +128,33 @@ export default function SubProjectShow() {
                 </div>
             ) : (
                 <div className="mt-6 flex flex-col gap-7">
+                    {usedStages.length > 0 && (
+                        <SelectField className="w-full sm:max-w-[320px]" label={t('tasks.list.filter_stage')} value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+                            <option value="all">{t('tasks.list.filter_all')}</option>
+                            {hasUnstaged && <option value="none">{t('tasks.list.filter_none')}</option>}
+                            {PHASES.map((phase) => {
+                                const inPhase = usedStages.filter((stage) => stage.phase === phase);
+                                if (inPhase.length === 0) return null;
+                                return (
+                                    <optgroup key={phase} label={t(`pipeline.phase.${phase}`)}>
+                                        {inPhase.map((stage) => (
+                                            <option key={stage.id} value={stage.id}>
+                                                {stage.name}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                );
+                            })}
+                        </SelectField>
+                    )}
+                    {visible.length === 0 && (
+                        <div className="card px-5 py-5">
+                            <p className="m-0 font-semibold">{t('tasks.list.filter_empty')}</p>
+                            <button type="button" className="btn btn-quiet btn-sm mt-1 min-h-11 px-0" onClick={() => setStageFilter('all')}>
+                                {t('tasks.list.filter_reset')}
+                            </button>
+                        </div>
+                    )}
                     {STATUS_ORDER.filter((status) => status !== 'rejected').map((status) => {
                         const items = byStatus(status);
                         if (items.length === 0) return null;
@@ -110,10 +179,13 @@ export default function SubProjectShow() {
                     subProjectId={sub.id}
                     people={props.people}
                     priorities={props.priorities}
+                    stages={props.stages}
                     onClose={() => setDialog(null)}
                 />
             )}
-            {dialog === 'edit' && <SubProjectDialog projectId={project.id} subProject={sub} leads={props.leads} statuses={props.statuses} onClose={() => setDialog(null)} />}
+            {dialog === 'edit' && (
+                <SubProjectDialog projectId={project.id} subProject={sub} leads={props.leads} statuses={props.statuses} budgetMinutes={props.budget?.minutes} onClose={() => setDialog(null)} />
+            )}
         </AppShell>
     );
 }

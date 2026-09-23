@@ -18,12 +18,14 @@ class Project extends Model
         'code',
         'status',
         'description',
+        'budget_minutes',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => ProjectStatus::class,
+            'budget_minutes' => 'integer',
         ];
     }
 
@@ -46,5 +48,10 @@ class Project extends Model
     public function activityLogs(): HasMany
     {
         return $this->hasMany(WorkActivityLog::class);
+    }
+
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(ProjectMilestone::class);
     }
 }

@@ -15,7 +15,7 @@ interface Props {
     team: number | null;
 }
 
-const NUMBER_COLUMNS = ['days_worked', 'regular', 'approved', 'pending', 'rejected', 'idle', 'short_days', 'non_workday', 'review', 'late_claims'] as const;
+const NUMBER_COLUMNS = ['days_worked', 'leave_days', 'regular', 'approved', 'pending', 'rejected', 'idle', 'short_days', 'non_workday', 'review', 'late_claims'] as const;
 
 /**
  * Per person, grouped by team with a subtotal after each group. A table from xl up (ENERGY 1 inside the table),
@@ -101,6 +101,9 @@ function NumberCells({ totals, className = '' }: { totals: Totals; className?: s
         <>
             <td className={cell}>
                 <Count value={totals.days_worked} />
+            </td>
+            <td className={cell}>
+                <Count value={totals.leave_days} />
             </td>
             <td className={cell}>
                 <Duration minutes={totals.regular_minutes} />

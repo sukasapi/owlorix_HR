@@ -10,6 +10,7 @@ export default {
         working: 'Clocked in',
         idle: 'PC quiet or disconnected',
         out: 'Clocked out',
+        leave: 'On leave today',
         not_started: 'Not clocked in today',
     },
     status: {
@@ -20,6 +21,7 @@ export default {
         idle: 'PC quiet :duration, since :time',
         interrupted: 'Desktop app disconnected since :time',
         out: 'Clocked out :time',
+        leave: 'On leave (:type)',
         not_started: 'Not clocked in',
     },
     idle_during_overtime: 'PC quiet :duration',
@@ -33,6 +35,7 @@ export default {
     minutes: 'Regular :regular, overtime :overtime',
     minutes_regular: 'Regular :regular',
     needs_review: 'Needs review',
+    on_leave_today: 'on leave today (:type), clocked in anyway',
     empty: {
         no_team_title: 'You do not lead a team yet.',
         no_team_body: 'This board shows members of the teams you lead. Ask Superadmin to make you Team Lead of a team on the Teams page.',

@@ -21,6 +21,7 @@ class SubProject extends Model
         'status',
         'lead_user_id',
         'due_date',
+        'budget_minutes',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class SubProject extends Model
         return [
             'status' => ProjectStatus::class,
             'due_date' => 'date:Y-m-d',
+            'budget_minutes' => 'integer',
         ];
     }
 

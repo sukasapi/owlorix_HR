@@ -63,6 +63,7 @@ export function useMetrics(totals: Totals): { main: Metric[]; flags: Metric[] } 
     return {
         main: [
             { key: 'days', label: t('reports.columns.days_worked'), value: <Count value={totals.days_worked} /> },
+            { key: 'leave', label: t('reports.columns.leave_days'), value: <Count value={totals.leave_days} /> },
             { key: 'regular', label: t('reports.columns.regular'), value: <Duration minutes={totals.regular_minutes} /> },
             { key: 'approved', label: t('reports.columns.approved'), value: <Duration minutes={totals.overtime_approved_minutes} /> },
             { key: 'pending', label: t('reports.columns.pending'), value: <Duration minutes={totals.overtime_pending_minutes} /> },

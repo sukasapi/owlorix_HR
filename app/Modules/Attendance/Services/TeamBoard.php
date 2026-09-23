@@ -9,6 +9,7 @@ use App\Modules\Attendance\Support\Time;
 use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Models\Device;
 use App\Modules\Identity\Models\User;
+use App\Modules\Leave\Services\LeaveDays;
 use App\Modules\Organization\Models\Team;
 use Carbon\CarbonImmutable;
 
@@ -18,13 +19,19 @@ use Carbon\CarbonImmutable;
  *
  * Scope: people who approve anyone's overtime (Project Manager, Project Director) see every active person; a Team
  * Lead sees the members of the teams they lead. The viewer is left out; their own day is on Hari ini.
+ *
+ * A person with approved leave today who has not clocked in shows as on leave (docs/14 4.3). Clocking in on a
+ * leave day is recorded as usual, and they then show by their shift like anyone else.
  */
 class TeamBoard
 {
-    /** Board order (docs/01 4.2.6): needs an answer, overtime, clocked in, PC quiet, out, not started. */
-    public const GROUPS = ['attention', 'overtime', 'working', 'idle', 'out', 'not_started'];
+    /** Board order (docs/01 4.2.6): needs an answer, overtime, clocked in, PC quiet, out, on leave, not started. */
+    public const GROUPS = ['attention', 'overtime', 'working', 'idle', 'out', 'leave', 'not_started'];
 
-    public function __construct(private readonly ShiftStateResolver $resolver) {}
+    public function __construct(
+        private readonly ShiftStateResolver $resolver,
+        private readonly LeaveDays $leaveDays,
+    ) {}
 
     /**
      * @return array{
@@ -49,6 +56,7 @@ class TeamBoard
             ->get(['id', 'name', 'username']);
 
         $ids = $people->modelKeys();
+        $onLeave = $this->leaveDays->onDate($ids, $today);
 
         $withShiftsToday = Shift::query()
             ->whereIn('user_id', $ids)
@@ -64,16 +72,18 @@ class TeamBoard
             ->get()
             ->keyBy('user_id');
 
-        $rows = $people->map(function (User $person) use ($withShiftsToday, $unclosed, $today, $now) {
+        $rows = $people->map(function (User $person) use ($withShiftsToday, $unclosed, $onLeave, $today, $now) {
+            $leave = $onLeave[$person->id] ?? null;
+
             if (! $withShiftsToday->has($person->id)) {
-                return $this->row($person, [], null, $today);
+                return $this->row($person, [], null, $today, $leave);
             }
 
             $shifts = $this->resolver->workDate($person->id, $today, $now);
             $carried = $unclosed->get($person->id);
             $carriedResolved = $carried !== null ? $this->resolver->shift($carried, $now) : null;
 
-            return $this->row($person, $shifts, $carriedResolved?->result->isLive() ? $carriedResolved : null, $today);
+            return $this->row($person, $shifts, $carriedResolved?->result->isLive() ? $carriedResolved : null, $today, $leave);
         });
 
         $hostnames = Device::query()->whereIn('id', $rows->pluck('device')->filter()->unique())->pluck('hostname', 'id');
@@ -100,9 +110,10 @@ class TeamBoard
 
     /**
      * @param  list<ResolvedShift>  $shifts  today's shifts
+     * @param  array{request_id: int, type: string}|null  $leave  approved leave today
      * @return array<string, mixed>
      */
-    private function row(User $person, array $shifts, ?ResolvedShift $carried, string $today): array
+    private function row(User $person, array $shifts, ?ResolvedShift $carried, string $today, ?array $leave = null): array
     {
         $all = $carried !== null ? [$carried, ...$shifts] : $shifts;
 
@@ -128,6 +139,7 @@ class TeamBoard
             $live !== null && $openIdle !== null => ['idle', 'idle', $openIdle->startedAt, 'half'],
             $live !== null => ['working', 'open', $live->result->clockInAt, 'open'],
             $latest !== null => ['out', 'out', $latest->result->clockOutAt, 'closed'],
+            $leave !== null => ['leave', 'leave', null, 'closed'],
             default => ['not_started', 'not_started', null, 'closed'],
         };
 
@@ -152,6 +164,7 @@ class TeamBoard
                 'tag' => $openIdle->tag?->value,
             ],
             'needs_review' => collect($all)->contains(fn (ResolvedShift $r) => $r->result->status === ShiftStatus::NeedsReview),
+            'leave' => $leave === null ? null : ['type' => $leave['type']],
         ];
     }
 

@@ -45,7 +45,7 @@ class TaskController extends Controller
         Gate::authorize('view', $task);
 
         $user = $request->user();
-        $task->load(['project', 'subProject.lead', 'assignee', 'creator', 'decider']);
+        $task->load(['project', 'subProject.lead', 'stage', 'assignee', 'creator', 'decider']);
         $isLead = $task->subProject !== null && Gate::allows('lead', $task->subProject);
 
         $sessions = TaskWorkSession::query()->with('user')->where('task_id', $task->id)->orderByDesc('started_at')->limit(200)->get();
@@ -80,6 +80,7 @@ class TaskController extends Controller
             'people' => $isLead ? User::query()->active()->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
                 ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])->values() : [],
             'priorities' => array_map(fn (TaskPriority $p) => $p->value, TaskPriority::cases()),
+            'stages' => TaskPresenter::stageOptions(),
             'limits' => ['file_max_kb' => SubmitTaskRequest::FILE_MAX_KB, 'file_types' => SubmitTaskRequest::FILE_TYPES],
         ]);
     }
@@ -99,6 +100,7 @@ class TaskController extends Controller
             $task = Task::query()->create([
                 'project_id' => $project->id,
                 'sub_project_id' => $subProject->id,
+                'stage_id' => $data['stage_id'] ?? null,
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
                 'status' => $direct ? TaskStatus::Todo : TaskStatus::Proposed,
@@ -115,6 +117,7 @@ class TaskController extends Controller
                 'title' => $task->title,
                 'status' => $task->status->value,
                 'assignee_id' => $task->assignee_id,
+                'stage_id' => $task->stage_id,
             ]);
 
             return $task;
@@ -131,7 +134,7 @@ class TaskController extends Controller
         $isLead = Gate::allows('lead', $task->subProject);
 
         DB::transaction(function () use ($task, $data, $isLead, $auditor) {
-            $fields = ['title', 'description', 'priority', 'due_date', 'estimate_minutes', 'assignee_id', 'evidence_required'];
+            $fields = ['title', 'description', 'priority', 'stage_id', 'due_date', 'estimate_minutes', 'assignee_id', 'evidence_required'];
             $before = $this->snapshot($task, $fields);
 
             $task->forceFill([
@@ -141,6 +144,11 @@ class TaskController extends Controller
                 'due_date' => $data['due_date'] ?? null,
                 'estimate_minutes' => $this->minutes($data['estimate_hours'] ?? null),
             ]);
+
+            // A form without the field keeps the stage
+            if (array_key_exists('stage_id', $data)) {
+                $task->stage_id = $data['stage_id'];
+            }
 
             if ($isLead) {
                 $task->forceFill([

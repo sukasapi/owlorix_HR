@@ -65,7 +65,8 @@ export default function TeamToday({ scope, board }: TeamTodayProps) {
 
     const people = teamId === 'all' ? board.people : board.people.filter((person) => person.team_ids.includes(teamId));
     const byGroup = (group: BoardGroup) => people.filter((person) => person.group === group);
-    const nobodyIn = people.length > 0 && people.every((person) => person.group === 'not_started');
+    const nobodyIn = people.length > 0 && people.every((person) => person.group === 'not_started' || person.group === 'leave');
+    const quietGroups = (['out', 'leave', 'not_started'] as const).filter((group) => byGroup(group).length > 0);
     const showTeam = teamId === 'all' && board.teams.length > 1;
 
     return (
@@ -145,9 +146,9 @@ export default function TeamToday({ scope, board }: TeamTodayProps) {
                             );
                         })}
 
-                        {(byGroup('out').length > 0 || byGroup('not_started').length > 0) && (
-                            <div className="grid items-start gap-6 lg:grid-cols-2">
-                                {(['out', 'not_started'] as const).map((group) => {
+                        {quietGroups.length > 0 && (
+                            <div className={`grid items-start gap-6 lg:grid-cols-2 ${quietGroups.length > 2 ? 'xl:grid-cols-3' : ''}`}>
+                                {quietGroups.map((group) => {
                                     const members = byGroup(group);
                                     if (members.length === 0) return null;
                                     return (
@@ -190,7 +191,7 @@ function CompactList({ people }: { people: BoardPerson[] }) {
             {people.map((person) => (
                 <li key={person.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold">{person.name}</span>
-                    {person.status === 'out' && <span className="num text-sm text-muted">{statusLine(person)}</span>}
+                    {(person.status === 'out' || person.status === 'leave') && <span className="num text-sm text-muted">{statusLine(person)}</span>}
                     {person.needs_review && (
                         <span className="chip chip-bad">
                             <Warning weight="bold" size={15} aria-hidden />

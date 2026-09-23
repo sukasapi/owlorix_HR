@@ -30,7 +30,7 @@ it('signs in a device and returns a token named with the device id, the profile 
         ->assertJsonPath('token_type', 'Bearer')
         ->assertJsonPath('user.username', $this->person->username)
         ->assertJsonPath('user.must_change_password', true)
-        ->assertJsonPath('user.permissions', [Permission::ClockIn->value])
+        ->assertJsonPath('user.permissions', collect(Role::Employee->permissions())->map(fn (Permission $p) => $p->value)->sort()->values()->all())
         ->assertJsonPath('device.id', 'PC-ANIM-07:3f9c');
 
     $device = Device::query()->findOrFail('PC-ANIM-07:3f9c');

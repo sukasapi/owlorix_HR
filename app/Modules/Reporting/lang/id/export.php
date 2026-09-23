@@ -27,6 +27,7 @@ return [
         'non_workday_shifts' => 'Shift di hari libur',
         'review_shifts' => 'Shift perlu dicek',
         'late_claims' => 'Klaim lembur terlambat',
+        'leave_days' => 'Hari cuti',
         'no_team' => 'Tanpa tim',
         'subtotal' => 'Subtotal :team',
         'total_studio' => 'Total studio',
@@ -78,6 +79,7 @@ return [
         'running_month' => 'Bulan ini masih berjalan. Angka bisa berubah sampai bulan selesai.',
         'idle' => 'PC diam hanya konteks: tidak mengurangi jam reguler atau lembur.',
         'rejected' => 'Lembur ditolak tetap tercatat, tapi bukan jam dibayar. Lembur menunggu belum diputuskan.',
+        'leave' => 'Hari cuti: hari kerja dengan cuti atau izin yang disetujui, semua jenis. Di bulan yang masih berjalan, dihitung sampai hari ini. Cuti tidak mengubah jam reguler atau lembur.',
         'shared' => 'Orang di lebih dari satu tim muncul di setiap timnya. Total menghitung setiap orang sekali.',
     ],
 ];

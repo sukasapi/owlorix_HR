@@ -7,6 +7,8 @@ use App\Modules\Attendance\Services\WebClock;
 use App\Modules\Attendance\Services\WebDevice;
 use App\Modules\Identity\Auth\AccountLookup;
 use App\Modules\Identity\Auth\LoginThrottle;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,6 +40,8 @@ class SignInController extends Controller
         $wait = $throttle->secondsUntilAllowed($account, $request->ip());
 
         if ($wait > 0) {
+            event(new Lockout($request));
+
             throw ValidationException::withMessages([
                 'username' => __('auth.throttle_minutes', ['minutes' => (int) ceil($wait / 60)]),
             ]);
@@ -45,11 +49,15 @@ class SignInController extends Controller
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             $throttle->recordFailure($account, $request->ip());
+            // Monitor aktivitas: RecordAuthEvents masks an identifier that matches no account; never the password
+            event(new Failed('web', $user, ['username' => $identifier]));
 
             throw ValidationException::withMessages(['username' => __('auth.failed')]);
         }
 
         if (! $user->isActive()) {
+            event(new Failed('web', $user, ['username' => $identifier]));
+
             throw ValidationException::withMessages(['username' => __('auth.inactive')]);
         }
 

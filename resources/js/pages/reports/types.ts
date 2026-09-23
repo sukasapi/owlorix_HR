@@ -12,6 +12,8 @@ export interface Totals {
     late_claims: number;
     pending_shifts: number;
     running_shifts: number;
+    /** Workdays with approved leave in the month (docs/14); never changes the minutes */
+    leave_days: number;
 }
 
 export interface PersonRow extends Totals {

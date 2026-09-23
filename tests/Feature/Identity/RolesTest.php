@@ -35,6 +35,7 @@ it('shows only navigation items whose page exists and the person may open', func
             ->component('my-day/Index')
             ->where('nav.0.group', 'my_work')
             ->where('nav.0.items.0.key', 'my_day')
+            ->where('nav.0.items', fn ($items) => collect($items)->pluck('key')->contains('leave'))
             // Team shows only the project list an employee may read; no management or admin pages
             ->where('nav.1.group', 'team')
             ->where('nav.1.items', fn ($items) => collect($items)->pluck('key')->all() === ['projects'])

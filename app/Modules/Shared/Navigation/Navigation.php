@@ -25,11 +25,16 @@ class Navigation
                 ['key' => 'overtime', 'route' => 'overtime.mine', 'permissions' => [Permission::ClockIn]],
                 ['key' => 'my_tasks', 'route' => 'projects.mine', 'permissions' => [Permission::ViewProjects]],
                 ['key' => 'activity_log', 'route' => 'activity.index', 'permissions' => [Permission::LogActivity]],
+                ['key' => 'leave', 'route' => 'leave.mine', 'permissions' => [Permission::RequestLeave]],
             ]],
             ['group' => 'team', 'items' => [
                 ['key' => 'team_today', 'route' => 'team.today', 'permissions' => [Permission::ViewTeamBoard]],
                 ['key' => 'approvals', 'route' => 'approvals.index', 'permissions' => [Permission::ApproveOvertime, Permission::ChangeOvertimeDecisions]],
+                // Leave requests to decide; someone who manages all leave finds them under Admin
+                ['key' => 'leave_approvals', 'route' => 'leave.approvals', 'permissions' => [Permission::ApproveLeave], 'unless' => Permission::ManageLeave],
                 ['key' => 'projects', 'route' => 'projects.index', 'permissions' => [Permission::ViewProjects, Permission::ManageProjects]],
+                ['key' => 'work_monitor', 'route' => 'monitoring.work', 'permissions' => [Permission::ViewWorkMonitor]],
+                ['key' => 'workload', 'route' => 'monitoring.workload', 'permissions' => [Permission::ViewWorkMonitor]],
                 ['key' => 'reports', 'route' => 'reports.index', 'permissions' => [Permission::ViewTeamReports, Permission::ViewAllReports]],
                 ['key' => 'calendar', 'route' => 'calendar.index', 'permissions' => [Permission::OpenWorkdays, Permission::ManageCalendar]],
                 // Management proposes corrections; someone who also applies them finds the page under Admin
@@ -43,7 +48,10 @@ class Navigation
                 ['key' => 'devices', 'route' => 'admin.devices.index', 'permissions' => [Permission::ManageDevices]],
                 ['key' => 'rules', 'route' => 'admin.settings.edit', 'permissions' => [Permission::ManageSettings]],
                 ['key' => 'app_settings', 'route' => 'admin.app-settings.edit', 'permissions' => [Permission::ManageSettings]],
+                ['key' => 'leave_admin', 'route' => 'admin.leave.index', 'permissions' => [Permission::ManageLeave]],
+                ['key' => 'pipeline', 'route' => 'admin.pipeline.index', 'permissions' => [Permission::ManagePipeline]],
                 ['key' => 'audit', 'route' => 'admin.audit.index', 'permissions' => [Permission::ViewAuditLog]],
+                ['key' => 'activity_monitor', 'route' => 'admin.activity.index', 'permissions' => [Permission::ViewActivityMonitor]],
             ]],
             // No permissions: everyone who is signed in reads the guide
             ['group' => 'help', 'items' => [

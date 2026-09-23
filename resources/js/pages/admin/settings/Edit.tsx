@@ -7,7 +7,7 @@ import { useForm, usePage } from '@inertiajs/react';
 import { ArrowCounterClockwise, CheckCircle, Globe, Info, WarningCircle } from '@phosphor-icons/react';
 import { type FormEvent, useId, useRef, useState } from 'react';
 
-type Group = 'work_hours' | 'overtime' | 'idle' | 'desktop_sync' | 'web';
+type Group = 'work_hours' | 'overtime' | 'idle' | 'desktop_sync' | 'web' | 'leave' | 'monitoring';
 type Unit = 'minutes' | 'hours' | 'seconds' | 'days';
 
 interface SettingField {
@@ -18,7 +18,7 @@ interface SettingField {
     min: number | null;
     max: number | null;
     rule: string;
-    applies: 'new_shifts' | 'calculation' | 'desktop' | 'web';
+    applies: 'new_shifts' | 'calculation' | 'desktop' | 'web' | 'daily' | 'next_request';
     value: number | boolean;
     default: number | boolean;
     changed_by: string | null;
@@ -32,7 +32,7 @@ interface PageProps {
 
 type Values = Record<string, string | boolean>;
 
-const GROUPS: Group[] = ['work_hours', 'overtime', 'idle', 'desktop_sync', 'web'];
+const GROUPS: Group[] = ['work_hours', 'overtime', 'idle', 'desktop_sync', 'web', 'leave', 'monitoring'];
 
 const toInput = (field: SettingField): string | boolean => (field.type === 'boolean' ? Boolean(field.value) : String(field.value));
 
@@ -218,7 +218,8 @@ function FieldRow({ field, value, error, onChange }: { field: SettingField; valu
                     {label}
                 </label>
                 <p id={helpId} className="help m-0 mt-1 max-w-[62ch]">
-                    {t(`settings.fields.${field.key}.help`)} {t('settings.rule', { rule: field.rule })}.
+                    {t(`settings.fields.${field.key}.help`)}
+                    {field.rule !== '' && <> {t('settings.rule', { rule: field.rule })}.</>}
                     {field.type === 'integer' && <> {t('settings.range', { min: field.min ?? '', max: field.max ?? '', unit: t(`settings.units.${field.unit}`) })}</>}
                 </p>
                 <p className="m-0 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">

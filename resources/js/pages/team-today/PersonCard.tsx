@@ -19,6 +19,8 @@ export function useStatusLine() {
             });
         }
 
+        if (person.status === 'leave') return t('team-today.status.leave', { type: person.leave?.type ?? '' });
+
         return t(`team-today.status.${person.status}`, { time });
     };
 }
@@ -45,6 +47,7 @@ export function PersonCard({ person, showTeam }: { person: BoardPerson; showTeam
               })
             : null,
         person.device,
+        person.status !== 'leave' && person.leave ? t('team-today.on_leave_today', { type: person.leave.type }) : null,
     ].filter(Boolean);
 
     return (

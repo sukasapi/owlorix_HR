@@ -4,7 +4,9 @@ namespace App\Modules\Reporting\Services;
 
 use App\Modules\Attendance\Models\Shift;
 use App\Modules\Attendance\Services\ShiftStateResolver;
+use App\Modules\Attendance\Support\Time;
 use App\Modules\Identity\Models\User;
+use App\Modules\Leave\Services\LeaveDays;
 use App\Modules\Organization\Models\Team;
 use App\Modules\Overtime\Services\OvertimeLookup;
 use Carbon\CarbonImmutable;
@@ -23,6 +25,7 @@ class MonthlyRecap
         private readonly ReportScope $scope,
         private readonly ShiftStateResolver $resolver,
         private readonly OvertimeLookup $overtime,
+        private readonly LeaveDays $leaveDays,
     ) {}
 
     /** @param int|null $teamId a team outside the viewer's scope is ignored */
@@ -46,16 +49,20 @@ class MonthlyRecap
         $lines = $candidateIds === [] ? collect() : $this->lines($candidateIds, $month, $now);
         $teamNames = $this->teamNamesByUser($teams);
 
-        $rows = ($candidateIds === [] ? collect() : User::withTrashed()
+        $users = ($candidateIds === [] ? collect() : User::withTrashed()
             ->when($candidateIds !== null, fn ($q) => $q->whereIn('id', $candidateIds))
             ->orderBy('name')
             ->orderBy('id')
             ->get())
-            ->filter(fn (User $user) => $lines->has($user->id) || $this->expectedInMonth($user, $month))
+            ->filter(fn (User $user) => $lines->has($user->id) || $this->expectedInMonth($user, $month));
+
+        $leave = $this->leave($users->map(fn (User $user) => $user->id)->values()->all(), $month, $now);
+
+        $rows = $users
             ->map(fn (User $user) => new PersonRow(
                 $user,
                 $teamNames[$user->id] ?? [],
-                Totals::forPerson($lines->get($user->id, [])),
+                Totals::forPerson($lines->get($user->id, []), count($leave[$user->id] ?? [])),
                 $lines->get($user->id, []),
             ))
             ->keyBy(fn (PersonRow $row) => $row->user->id);
@@ -110,8 +117,9 @@ class MonthlyRecap
         }
 
         $lines = $this->lines([$userId], $month, $now)->get($userId, []);
+        $leave = $this->leave([$userId], $month, $now)[$userId] ?? [];
 
-        return new PersonRow($user, $this->teamNamesByUser($this->scope->teams($viewer))[$userId] ?? [], Totals::forPerson($lines), $lines);
+        return new PersonRow($user, $this->teamNamesByUser($this->scope->teams($viewer))[$userId] ?? [], Totals::forPerson($lines, count($leave)), $lines);
     }
 
     /**
@@ -158,6 +166,24 @@ class MonthlyRecap
         }
 
         return collect($lines);
+    }
+
+    /**
+     * Approved leave days counted like attendance: up to today (studio date) in the running month, none in a month
+     * still to come.
+     *
+     * @param  list<int>  $userIds
+     * @return array<int, list<string>>
+     */
+    private function leave(array $userIds, ReportMonth $month, CarbonImmutable $now): array
+    {
+        if ($month->isFuture($now)) {
+            return [];
+        }
+
+        $until = $month->isCurrent($now) ? Time::workDate($now) : $month->lastDate();
+
+        return $this->leaveDays->approvedDates($userIds, $month->firstDate(), $until);
     }
 
     /** Active accounts that existed during the month are listed even without shifts, so a missing month shows. */

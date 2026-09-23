@@ -45,6 +45,7 @@ export default {
     columns: {
         name: 'Name',
         days_worked: 'Days worked',
+        leave_days: 'Leave days',
         regular: 'Regular hours',
         approved: 'Overtime approved',
         pending: 'Overtime pending',
@@ -59,6 +60,7 @@ export default {
     legend: {
         toggle: 'What the columns mean',
         days_worked: 'Days worked: dates with at least one shift.',
+        leave_days: 'Leave days: workdays with approved leave or time off, any type. In the running month, counted up to today. Leave never changes regular hours or overtime.',
         regular: 'Regular hours: work up to 8 hours per work date, counted from clock-in, with no break deduction.',
         overtime: 'Approved, pending and rejected overtime are added up separately and never combined.',
         idle: 'PC quiet: time with no keyboard or mouse input. Recorded, never deducted.',

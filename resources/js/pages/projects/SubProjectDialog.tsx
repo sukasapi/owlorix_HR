@@ -4,6 +4,7 @@ import { useT } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { X } from '@phosphor-icons/react';
 import { type FormEvent, useId } from 'react';
+import { budgetHoursValue } from './BudgetMeter';
 import type { PersonOption, ProjectStatus, SubProjectData } from './taskTypes';
 
 interface Props {
@@ -11,25 +12,35 @@ interface Props {
     subProject?: SubProjectData;
     leads: PersonOption[];
     statuses: ProjectStatus[];
+    /** Set for people with projects.budget: the field is shown and sent only then. `null` means no budget yet. */
+    budgetMinutes?: number | null;
     onClose: () => void;
 }
 
 /** Create or edit a sub project; the lead list holds only people who manage projects. */
-export function SubProjectDialog({ projectId, subProject, leads, statuses, onClose }: Props) {
+export function SubProjectDialog({ projectId, subProject, leads, statuses, budgetMinutes, onClose }: Props) {
     const t = useT();
     const titleId = useId();
     const editing = subProject !== undefined;
+    const canBudget = budgetMinutes !== undefined;
     const form = useForm({
         name: subProject?.name ?? '',
         description: subProject?.description ?? '',
         status: subProject?.status ?? ('active' as ProjectStatus),
         lead_user_id: subProject?.lead ? String(subProject.lead.id) : '',
         due_date: subProject?.due_date ?? '',
+        budget_hours: budgetHoursValue(budgetMinutes),
     });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.transform((data) => ({ ...data, lead_user_id: data.lead_user_id === '' ? null : Number(data.lead_user_id), due_date: data.due_date || null }));
+        form.transform(({ budget_hours, ...data }) => ({
+            ...data,
+            lead_user_id: data.lead_user_id === '' ? null : Number(data.lead_user_id),
+            due_date: data.due_date || null,
+            // Without projects.budget the field is not sent at all, so the stored budget stays
+            ...(canBudget ? { budget_hours: budget_hours === '' ? null : budget_hours } : {}),
+        }));
         const options = { preserveScroll: true, onSuccess: onClose };
         if (editing) form.put(route('projects.sub.update', [projectId, subProject.id]), options);
         else form.post(route('projects.sub.store', projectId), options);
@@ -75,6 +86,20 @@ export function SubProjectDialog({ projectId, subProject, leads, statuses, onClo
                         </SelectField>
                         <TextField label={t('tasks.sub.due_date')} type="date" value={form.data.due_date} onChange={(e) => form.setData('due_date', e.target.value)} error={form.errors.due_date} />
                     </div>
+                    {canBudget && (
+                        <TextField
+                            label={t('projects.budget.field')}
+                            help={t('projects.budget.field_help')}
+                            type="number"
+                            inputMode="decimal"
+                            min={0.25}
+                            max={99999}
+                            step={0.25}
+                            value={form.data.budget_hours}
+                            onChange={(e) => form.setData('budget_hours', e.target.value)}
+                            error={form.errors.budget_hours}
+                        />
+                    )}
                     <TextAreaField label={t('tasks.sub.description')} rows={3} maxLength={2000} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} error={form.errors.description} />
                 </div>
                 <footer className="flex justify-end gap-2.5 border-t border-line px-5 py-3.5 sm:px-7">

@@ -10,7 +10,7 @@ import { Check, DownloadSimple, HandGrabbing, LinkSimple, Pause, PencilSimple, P
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { PersonLine, PriorityMark, StatusChip } from './TaskBits';
 import { TaskDialog } from './TaskDialog';
-import type { PersonOption, RunningTimer, SubProjectData, TaskPriority, TaskRow } from './taskTypes';
+import type { PersonOption, RunningTimer, StageOption, SubProjectData, TaskPriority, TaskRow } from './taskTypes';
 
 interface TaskDetail extends TaskRow {
     description: string | null;
@@ -53,6 +53,7 @@ interface PageProps {
     can: { update: boolean; delete: boolean; decide: boolean; claim: boolean; work: boolean; review: boolean; lead: boolean };
     people: PersonOption[];
     priorities: TaskPriority[];
+    stages: StageOption[];
     limits: { file_max_kb: number; file_types: string };
 }
 
@@ -130,6 +131,7 @@ export default function TaskShow() {
                         title: task.title,
                         description: task.description,
                         priority: task.priority,
+                        stage_id: task.stage?.id ?? null,
                         assignee_id: task.assignee?.id ?? null,
                         due_date: task.due_date,
                         estimate_minutes: task.estimate_minutes,
@@ -137,6 +139,7 @@ export default function TaskShow() {
                     }}
                     people={props.people}
                     priorities={props.priorities}
+                    stages={props.stages}
                     onClose={() => setEditing(false)}
                 />
             )}
@@ -541,6 +544,17 @@ function Facts() {
     const rows: [string, ReactNode][] = [
         [t('tasks.detail.assignee'), <PersonLine key="a" person={task.assignee} fallback={t('tasks.detail.no_assignee')} />],
         [t('tasks.detail.priority'), t(`tasks.priority.${task.priority}`)],
+        [
+            t('tasks.detail.stage'),
+            task.stage ? (
+                <span key="s">
+                    {task.stage.name}
+                    <span className="block text-sm font-normal text-muted">{t(`pipeline.phase.${task.stage.phase}`)}</span>
+                </span>
+            ) : (
+                none
+            ),
+        ],
         [t('tasks.detail.due'), task.due_date ? formatShortDate(task.due_date, locale) : none],
         [t('tasks.detail.estimate'), task.estimate_minutes ? formatMinutes(task.estimate_minutes, locale) : none],
         [t('tasks.detail.logged'), formatMinutes(task.logged_minutes, locale)],
