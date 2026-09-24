@@ -1,8 +1,9 @@
 /**
  * Project document links click-through (docs/16), on the disposable database only.
- * Setup: DB_DATABASE=owlorix_hr_links_click, users lead.klik / anggota.klik / luar.klik, project 1 (empty links)
- * and project 2 (empty, anggota.klik is a member). Serve with:
- *   DB_DATABASE=owlorix_hr_links_click php -S 127.0.0.1:8011 -t public vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
+ * Setup: create and seed owlorix_hr_links_click with scripts/seed-links-click.php (steps in its header): users
+ * lead.klik / anggota.klik / luar.klik, project 1 (no links yet) and project 2 (empty, anggota.klik is a member).
+ * The script expects no links, so empty project_links before a rerun. Serve from web/public (server.php needs it):
+ *   cd public && DB_DATABASE=owlorix_hr_links_click php -S 127.0.0.1:8011 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
  * Usage: node scripts/clickthrough-links.mjs
  */
 import puppeteer from 'puppeteer-core';
