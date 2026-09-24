@@ -63,6 +63,23 @@ it('shows a Team Lead their team members and the sub projects they lead, nothing
     expect(collect($workload['people'])->pluck('person.id')->all())->toBe([$mine->id]);
 });
 
+it('shows a Team Lead a shared task when any one of its assignees is in their team', function () {
+    $lead = userWithRole(Role::TeamLead);
+    $mine = userWithRole(Role::Employee);
+    $other = userWithRole(Role::Employee);
+    W::team('Animasi', $lead, $mine);
+    $sub = W::sub(W::project('Iklan Kopi'), 'Shot 30 detik');
+
+    $shared = W::task($sub, [$other, $mine], TaskStatus::InProgress, ['title' => 'Tugas bersama', 'due_date' => '2026-09-22']);
+    W::task($sub, [$other], extra: ['title' => 'Tugas tim lain', 'due_date' => '2026-09-22']);
+
+    $props = monitorProps($lead);
+
+    expect($props['headline']['open'])->toBe(1)
+        ->and(collect($props['due']['rows'])->pluck('id')->all())->toBe([$shared->id])
+        ->and(collect($props['due']['rows'][0]['assignees'])->pluck('id')->all())->toBe([$other->id, $mine->id]);
+});
+
 it('tells a Team Lead without a team or a led sub project why the page is empty', function () {
     $lead = userWithRole(Role::TeamLead);
     W::task(W::sub(W::project('Film Pendek'), 'Episode 1'), userWithRole(Role::Employee));
@@ -257,7 +274,7 @@ it('lists open tasks that are overdue or due within 7 days, earliest first', fun
             [$soon->id, 'Minggu depan', 7],
         ])
         ->and($props['headline']['overdue'])->toBe(1)
-        ->and($props['due']['rows'][0]['assignee']['id'])->toBe($person->id);
+        ->and(collect($props['due']['rows'][0]['assignees'])->pluck('id')->all())->toBe([$person->id]);
 });
 
 it('lists open milestones that are overdue or due in the next 30 days', function () {

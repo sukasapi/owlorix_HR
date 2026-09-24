@@ -18,8 +18,8 @@ export default {
     notes: {
         heading: 'Cara membaca',
         capacity: 'Kapasitas: hari kerja orang itu di minggu yang dipilih menurut Kalender, dikurangi hari cuti yang disetujui, dikali :limit.',
-        planned: 'Rencana: sisa estimasi tugas yang ditugaskan kepadanya, belum mulai, dikerjakan, atau perlu revisi, dengan tenggat di minggu yang dipilih atau sebelumnya. Sisa = estimasi dikurangi menit timer, paling kecil 0.',
-        review: 'Tugas yang menunggu review tidak dihitung: kerjanya sudah dikirim, keputusan ada di lead.',
+        planned: 'Rencana: bagiannya dari sisa estimasi tugas yang bagiannya belum dikirim atau perlu revisi, dengan tenggat di minggu yang dipilih atau sebelumnya. Sisa = estimasi dikurangi semua menit timer di tugas itu (paling kecil 0), lalu dibagi rata ke semua pengerja tugas itu.',
+        review: 'Bagian yang sudah dikirim dan menunggu review tidak dihitung: kerjanya sudah dikirim, keputusan ada di lead.',
         status: 'Longgar di bawah 50 persen kapasitas, pas 50 sampai 79 persen, penuh 80 sampai 100 persen, lebih di atas 100 persen.',
         estimate: 'Tugas tanpa estimasi tidak masuk rencana. Jumlahnya tampil di kolom sendiri supaya kamu tahu estimasi mana yang perlu diisi.',
     },

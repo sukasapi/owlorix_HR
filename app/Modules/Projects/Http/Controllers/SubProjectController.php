@@ -9,6 +9,7 @@ use App\Modules\Projects\Enums\ProjectStatus;
 use App\Modules\Projects\Enums\TaskPriority;
 use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Http\Requests\SubProjectRequest;
+use App\Modules\Projects\Http\Requests\TaskRequest;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
@@ -36,13 +37,13 @@ class SubProjectController extends Controller
 
         $tasks = Task::query()
             ->withLoggedMinutes()
-            ->with(['stage', 'assignee', 'creator'])
+            ->with(['stage', 'assignees', 'creator'])
             ->where('sub_project_id', $subProject->id)
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
             ->orderByRaw('due_date is null, due_date')
             ->orderBy('id')
             ->get()
-            ->map(fn (Task $task) => TaskPresenter::row($task));
+            ->map(fn (Task $task) => TaskPresenter::row($task, $user));
 
         // Budget numbers only reach people with projects.budget; for everyone else the key is absent (docs/14 3.3)
         $budget = HourBudget::canSee($user)
@@ -62,7 +63,8 @@ class SubProjectController extends Controller
                 'budget' => HourBudget::canSee($user),
             ],
             'stages' => TaskPresenter::stageOptions(),
-            'people' => $isLead ? $this->people() : [],
+            'people' => $isLead ? TaskPresenter::assigneeOptions($project->id) : [],
+            'max_assignees' => TaskRequest::MAX_ASSIGNEES,
             'leads' => Gate::allows('update', $subProject) ? $this->leadOptions() : [],
             'statuses' => array_map(fn (ProjectStatus $s) => $s->value, ProjectStatus::cases()),
             'task_statuses' => array_map(fn (TaskStatus $s) => $s->value, TaskStatus::cases()),
@@ -156,14 +158,6 @@ class SubProjectController extends Controller
         if ($lead === null || ! $lead->hasPermission(Permission::ManageProjects)) {
             throw ValidationException::withMessages(['lead_user_id' => __('projects::messages.lead_needs_manage')]);
         }
-    }
-
-    /** @return list<array{id: int, name: string, username: string}> */
-    private function people(): array
-    {
-        return User::query()->active()->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
-            ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])
-            ->values()->all();
     }
 
     /** @return list<array{id: int, name: string, username: string}> */

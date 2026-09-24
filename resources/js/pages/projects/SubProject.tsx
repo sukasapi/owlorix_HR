@@ -11,6 +11,7 @@ import { SubProjectDialog } from './SubProjectDialog';
 import { PersonLine, TaskListItem } from './TaskBits';
 import { TaskDialog } from './TaskDialog';
 import {
+    type AssigneeOption,
     type BudgetData,
     PHASES,
     type PersonOption,
@@ -28,7 +29,9 @@ interface PageProps {
     sub_project: SubProjectData;
     tasks: TaskRow[];
     can: { manage: boolean; lead: boolean; create_task: boolean; propose_task: boolean; budget: boolean };
-    people: PersonOption[];
+    /** Project members a lead can put on a task; empty for everyone else */
+    people: AssigneeOption[];
+    max_assignees: number;
     leads: PersonOption[];
     statuses: ProjectStatus[];
     priorities: TaskPriority[];
@@ -178,6 +181,7 @@ export default function SubProjectShow() {
                     projectId={project.id}
                     subProjectId={sub.id}
                     people={props.people}
+                    maxAssignees={props.max_assignees}
                     priorities={props.priorities}
                     stages={props.stages}
                     onClose={() => setDialog(null)}

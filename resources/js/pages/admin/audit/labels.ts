@@ -62,6 +62,8 @@ export function subjectText(t: Translate, subject: AuditSubject, locale: Locale)
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const PERSON_KEYS = ['user_id', 'person_id', 'lead_user_id', 'opened_by', 'proposed_by', 'approved_by', 'decided_by'];
+/** Lists of person ids, each item read as a person */
+const PERSON_LIST_KEYS = ['assignee_ids', 'assignees_added', 'assignees_removed'];
 
 function unitFor(key: string): string | null {
     const match = key.match(/_(minutes|seconds|hours|days)$/);
@@ -75,7 +77,8 @@ export function valueText(t: Translate, locale: Locale, names: Names, entry: Aud
 
     if (Array.isArray(value)) {
         if (value.length === 0) return t('audit.diff.empty');
-        return value.map((item) => valueText(t, locale, names, entry, key === 'team_ids' ? 'team_id' : key === 'workdays' ? 'weekday' : key, item, payload)).join(', ');
+        const itemKey = key === 'team_ids' ? 'team_id' : key === 'workdays' ? 'weekday' : PERSON_LIST_KEYS.includes(key) ? 'person_id' : key;
+        return value.map((item) => valueText(t, locale, names, entry, itemKey, item, payload)).join(', ');
     }
 
     // A nested snapshot (a shift before and after a correction) reads as "Jam masuk: 09.00; Status: Selesai"
@@ -96,7 +99,7 @@ export function valueText(t: Translate, locale: Locale, names: Names, entry: Aud
 
     if (key === 'weekday') return maybe(t, `audit.values.weekdays.${value}`) ?? String(value);
     if (key === 'roles') return maybe(t, `common.roles.${value}`) ?? String(value);
-    if (['status', 'kind', 'type', 'scope_type', 'reason', 'field'].includes(key)) {
+    if (['status', 'part_status', 'kind', 'type', 'scope_type', 'reason', 'field'].includes(key)) {
         const known = maybe(t, `audit.values.${key}.${value}`);
         if (known) return known;
     }

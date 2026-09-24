@@ -91,6 +91,7 @@ export default {
         'task.proposal_approved': 'Usulan tugas disetujui',
         'task.proposal_rejected': 'Usulan tugas ditolak',
         'task.claimed': 'Tugas diambil',
+        'task.assignees_changed': 'Pengerja tugas diubah',
         'task.submitted': 'Bukti tugas dikirim',
         'task.reviewed': 'Bukti tugas direview',
         'branding.updated': 'Pengaturan aplikasi diubah',
@@ -179,6 +180,11 @@ export default {
         shift: 'Shift',
         shift_id: 'Nomor shift',
         person_id: 'Orang',
+        assignee_ids: 'Pengerja',
+        assignees_added: 'Pengerja ditambah',
+        assignees_removed: 'Pengerja dikeluarkan',
+        part_status: 'Status bagian',
+        submission_id: 'Nomor kiriman bukti',
         work_date: 'Tanggal kerja',
         proposed_by: 'Diusulkan oleh',
         approved_by: 'Disetujui oleh',
@@ -194,6 +200,12 @@ export default {
     values: {
         yes: 'Ya',
         no: 'Tidak',
+        part_status: {
+            open: 'Belum kirim',
+            submitted: 'Menunggu review',
+            changes_requested: 'Perlu revisi',
+            approved: 'Disetujui',
+        },
         status: {
             active: 'Aktif',
             suspended: 'Dinonaktifkan',

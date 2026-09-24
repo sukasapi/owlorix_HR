@@ -1,7 +1,7 @@
 export default {
     title: 'Work monitor',
     lead_studio: 'Tasks, reviews, and work hours across the studio.',
-    lead_scope: 'Tasks of the teams you lead and every task in the sub projects you lead.',
+    lead_scope: 'Tasks with at least one assignee from a team you lead, and every task in the sub projects you lead.',
     not_counted: 'Proposals not yet decided and rejected proposals are not counted on this page.',
     filters: {
         label: 'Filter the work monitor',

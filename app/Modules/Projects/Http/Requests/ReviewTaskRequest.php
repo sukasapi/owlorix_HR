@@ -16,6 +16,8 @@ class ReviewTaskRequest extends FormRequest
     {
         return [
             'decision' => ['required', Rule::in(['approve', 'changes'])],
+            // Evidence is reviewed per person: the submission being decided (docs/15 section 3)
+            'submission_id' => ['required', 'integer'],
             'note' => ['nullable', 'required_if:decision,changes', 'string', 'min:10', 'max:2000'],
         ];
     }

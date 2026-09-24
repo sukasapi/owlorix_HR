@@ -469,7 +469,7 @@ export const articles: Article[] = [
                 rows: [
                     ['Proyek', 'Nama, kode, status, anggota', 'Team Lead, PM, PD, Superadmin'],
                     ['Sub proyek', 'Nama, lead, tenggat, status', 'Team Lead, PM, PD, Superadmin'],
-                    ['Tugas', 'Judul, detail, prioritas, pengerja, tenggat, estimasi, wajib bukti', 'Lead langsung, atau anggota lewat usulan'],
+                    ['Tugas', 'Judul, detail, prioritas, pengerja (satu orang atau lebih), tenggat, estimasi, wajib bukti', 'Lead langsung, atau anggota lewat usulan'],
                 ],
             },
             { type: 'p', text: 'Anggota proyek ditugaskan di halaman proyek. Hanya anggota yang bisa mengusulkan dan mengambil tugas. Menu **Tugas saya** berisi timer yang berjalan, tugasmu, usulanmu, dan proyek yang ditugaskan kepadamu.' },
@@ -481,7 +481,7 @@ export const articles: Article[] = [
         title: 'Mengusulkan tugas',
         summary: 'Anggota proyek mengusulkan tugas di sub proyek. Lead menyetujui atau menolak dengan alasan.',
         audience: ['activity.log'],
-        keywords: ['usul', 'usulan', 'propose', 'tugas baru', 'buat tugas', 'ditolak', 'disetujui', 'task'],
+        keywords: ['usul', 'usulan', 'propose', 'tugas baru', 'buat tugas', 'ditolak', 'disetujui', 'task', 'pengerja', 'ambil tugas'],
         questions: ['Cara membuat tugas', 'Kenapa tugas saya harus disetujui?', 'Usulan tugas saya ditolak'],
         blocks: [
             {
@@ -489,12 +489,12 @@ export const articles: Article[] = [
                 items: [
                     'Buka proyek, pilih sub proyek.',
                     'Tekan **Usulkan tugas**. Tulis judul berupa hasil yang dituju, detail, prioritas, tenggat, dan estimasi jam kalau ada.',
-                    'Tekan **Kirim usulan**. Usulan masuk ke lead sub proyek dan otomatis ditugaskan kepadamu.',
-                    'Lead menyetujui (tugas masuk daftar **Belum mulai**) atau menolak dengan alasan. Alasannya tampil di **Tugas saya**, bagian **Usulanmu**.',
+                    'Tekan **Kirim usulan**. Usulan masuk ke lead sub proyek, dan kamu otomatis jadi pengerjanya.',
+                    'Lead menyetujui (tugas masuk daftar **Belum mulai**, lead boleh menambah atau mengganti pengerja) atau menolak dengan alasan. Alasannya tampil di **Tugas saya**, bagian **Usulanmu**.',
                 ],
             },
             { type: 'flow', flow: 'alur-tugas' },
-            { type: 'p', text: 'Tugas yang dibuat lead langsung masuk daftar. Tugas tanpa pengerja bisa diambil anggota proyek dengan **Ambil tugas ini**.' },
+            { type: 'p', text: 'Tugas yang dibuat lead langsung masuk daftar, dengan satu pengerja atau lebih, atau tanpa pengerja. Tugas tanpa pengerja bisa diambil anggota proyek dengan **Ambil tugas ini**; yang mengambil jadi pengerjanya.' },
         ],
     },
     {
@@ -503,8 +503,8 @@ export const articles: Article[] = [
         title: 'Timer, bukti, dan review',
         summary: 'Nyalakan timer saat mengerjakan, kirim bukti untuk review. Sesi timer otomatis masuk Log kerja.',
         audience: ['activity.log'],
-        keywords: ['timer', 'mulai timer', 'jeda', 'bukti', 'evidence', 'kirim bukti', 'review', 'revisi', 'selesai', 'upload', 'file', 'tautan'],
-        questions: ['Cara kirim bukti tugas', 'Tugas saya diminta revisi', 'Apakah timer tugas sama dengan absen?', 'File bukti terlalu besar'],
+        keywords: ['timer', 'mulai timer', 'jeda', 'bukti', 'evidence', 'kirim bukti', 'review', 'revisi', 'selesai', 'upload', 'file', 'tautan', 'pengerja', 'bagian', 'tugas bersama', 'belum kirim'],
+        questions: ['Cara kirim bukti tugas', 'Tugas saya diminta revisi', 'Apakah timer tugas sama dengan absen?', 'File bukti terlalu besar', 'Satu tugas dikerjakan beberapa orang'],
         blocks: [
             {
                 type: 'steps',
@@ -512,12 +512,26 @@ export const articles: Article[] = [
                     'Buka tugasmu dan tekan **Mulai timer**. Timer tampil di bilah atas semua halaman. Satu orang satu timer: mulai di tugas lain menjeda yang berjalan.',
                     '**Jeda timer** saat berhenti. Setiap mulai sampai jeda adalah satu sesi.',
                     'Selesai? **Kirim bukti**: tulis apa yang dikerjakan, isi tautan bukti atau unggah file (gambar, PDF, video pendek, ZIP, maksimal 20 MB). File render besar kirim lewat tautan.',
-                    'Lead mereview: **Setujui, tugas selesai** atau **Minta revisi** dengan catatan.',
+                    'Lead mereview bagianmu: **Setujui bagian ini** atau **Minta revisi** dengan catatan.',
                     'Diminta revisi? Catatannya tampil di atas tugas. Nyalakan timer lagi, perbaiki, dan kirim bukti lagi.',
                 ],
             },
+            {
+                type: 'p',
+                text: 'Satu tugas bisa dikerjakan beberapa orang. Setiap pengerja punya **bagian** sendiri: timer sendiri, bukti sendiri, dan review sendiri. Sesi timer orang lain tidak ikut masuk Log kerjamu.',
+            },
+            {
+                type: 'table',
+                head: ['Status bagian', 'Artinya'],
+                rows: [
+                    ['Belum kirim', 'Pengerja belum mengirim bukti di putaran ini'],
+                    ['Menunggu review', 'Bukti sudah dikirim. Review dimulai setelah semua pengerja mengirim'],
+                    ['Perlu revisi', 'Lead minta perbaikan. Pengerja itu memperbaiki dan mengirim lagi'],
+                    ['Disetujui', 'Bagian itu selesai. Tugas selesai setelah semua bagian disetujui'],
+                ],
+            },
             { type: 'note', title: 'Timer tugas bukan absen', text: 'Timer tugas mencatat waktu per tugas untuk Log kerja. Absen masuk dan pulang tetap lewat Hari ini atau aplikasi desktop.' },
-            { type: 'p', text: 'Tugas yang wajib bukti tidak bisa dikirim tanpa tautan atau file. Lead bisa mematikan **wajib bukti** untuk tugas tanpa file, misalnya rapat.' },
+            { type: 'p', text: 'Status bagianmu tampil di bagian **Pengerja** di halaman tugas dan di **Tugas saya**. Tugas yang wajib bukti tidak bisa dikirim tanpa tautan atau file. Lead bisa mematikan **wajib bukti** untuk tugas tanpa file, misalnya rapat.' },
         ],
     },
     {
@@ -529,7 +543,7 @@ export const articles: Article[] = [
         keywords: ['log kerja', 'logbook', 'aktivitas', 'catat aktivitas', 'otomatis', 'jurnal', 'timesheet'],
         questions: ['Bagaimana tugas jadi logbook?', 'Cara mencatat aktivitas manual', 'Log kerja dari tugas'],
         blocks: [
-            { type: 'p', text: 'Saat kamu mengirim bukti, **setiap sesi timer** tugas itu yang belum tercatat menjadi satu baris Log kerja: proyek, jam mulai dan selesai, deskripsi berisi judul tugas dan catatanmu, dan tautan bukti.' },
+            { type: 'p', text: 'Saat kamu mengirim bukti, **setiap sesi timer milikmu** di tugas itu yang belum tercatat menjadi satu baris Log kerja: proyek, jam mulai dan selesai, deskripsi berisi judul tugas dan catatanmu, dan tautan bukti. Sesi pengerja lain masuk Log kerja mereka saat mereka mengirim bukti.' },
             {
                 type: 'list',
                 items: [
@@ -596,17 +610,25 @@ export const articles: Article[] = [
         title: 'Memimpin sub proyek: usulan dan review',
         summary: 'Lead memutuskan usulan tugas dan mereview bukti. Badge Tugas saya menunjukkan yang menunggu.',
         audience: LEAD_TASKS,
-        keywords: ['lead', 'keputusan', 'setujui usulan', 'tolak usulan', 'review bukti', 'minta revisi', 'sub proyek baru', 'tim lead'],
-        questions: ['Cara menyetujui usulan tugas', 'Cara review bukti tugas', 'Siapa yang bisa menolak usulan?'],
+        keywords: ['lead', 'keputusan', 'setujui usulan', 'tolak usulan', 'review bukti', 'minta revisi', 'sub proyek baru', 'tim lead', 'pengerja', 'beberapa pengerja', 'tugaskan'],
+        questions: ['Cara menyetujui usulan tugas', 'Cara review bukti tugas', 'Siapa yang bisa menolak usulan?', 'Cara menugaskan beberapa orang ke satu tugas'],
         blocks: [
             {
                 type: 'steps',
                 items: [
                     'Buat sub proyek di halaman proyek: **Sub proyek baru**, isi nama dan pilih **Lead**.',
                     'Lihat **Tugas saya**, bagian **Menunggu keputusanmu**. Angka di menu adalah jumlahnya.',
-                    'Usulan: pilih pengerja kalau perlu, lalu **Setujui** atau **Tolak** dengan alasan minimal 10 karakter.',
-                    'Bukti: buka tautan atau file, lalu **Setujui, tugas selesai** atau **Minta revisi** dengan catatan.',
+                    'Usulan: centang atau ganti pengerja kalau perlu, lalu **Setujui** atau **Tolak** dengan alasan minimal 10 karakter.',
+                    'Bukti: setiap pengerja punya kartu review sendiri. Buka tautan atau file, lalu **Setujui bagian ini** atau **Minta revisi** dengan catatan. Tugas selesai setelah semua bagian disetujui.',
                 ],
+            },
+            {
+                type: 'p',
+                text: 'Pengerja dipilih di form tugas (**Tambah tugas** atau **Ubah**): centang satu orang atau lebih dari anggota proyek, paling banyak 20. Review baru bisa dimulai setelah semua pengerja mengirim bukti; sebelum itu tampil "Menunggu N orang lagi mengirim bukti". Pengerja yang diminta revisi tidak menahan review pengerja lain.',
+            },
+            {
+                type: 'p',
+                text: 'Menambah pengerja ke tugas yang sudah selesai membuat tugas itu berjalan lagi. Mengeluarkan pengerja menghapus bagiannya dan menghentikan timernya di tugas itu; sesi yang belum masuk Log kerja tetap tersimpan.',
             },
             {
                 type: 'table',
@@ -617,7 +639,7 @@ export const articles: Article[] = [
                     ['Project Manager, Project Director, Superadmin', 'Semua sub proyek'],
                 ],
             },
-            { type: 'p', text: 'Lead menambah tugas langsung ke daftar dengan **Tambah tugas**. Tidak ada yang mereview bukti tugasnya sendiri, kecuali PM, PD, dan Superadmin.' },
+            { type: 'p', text: 'Lead menambah tugas langsung ke daftar dengan **Tambah tugas**. Tidak ada yang mereview buktinya sendiri, kecuali PM, PD, dan Superadmin.' },
         ],
     },
     {
@@ -657,7 +679,7 @@ export const articles: Article[] = [
                     ['Anggaran jam', 'Jam terpakai sejak proyek mulai dibanding anggaran. Hanya PM, PD, dan Superadmin'],
                 ],
             },
-            { type: 'p', text: 'Team Lead melihat tugas anggota tim yang dia pimpin dan semua tugas di sub proyek yang dia pimpin. Project Manager, Project Director, dan Superadmin melihat seluruh studio. Setiap grafik punya **Lihat sebagai tabel** untuk angka lengkapnya.' },
+            { type: 'p', text: 'Team Lead melihat tugas yang salah satu pengerjanya anggota tim yang dia pimpin, dan semua tugas di sub proyek yang dia pimpin. Project Manager, Project Director, dan Superadmin melihat seluruh studio. Setiap grafik punya **Lihat sebagai tabel** untuk angka lengkapnya.' },
         ],
     },
     {
@@ -674,12 +696,12 @@ export const articles: Article[] = [
                 head: ['Angka', 'Cara menghitung'],
                 rows: [
                     ['Kapasitas', 'Hari kerja minggu itu menurut Kalender, dikurangi hari cuti yang disetujui, dikali 8 jam'],
-                    ['Rencana', 'Sisa estimasi tugas yang ditugaskan kepadanya, belum mulai, dikerjakan, atau perlu revisi, dengan tenggat sampai akhir minggu itu (termasuk yang sudah lewat). Sisa = estimasi dikurangi menit timer'],
+                    ['Rencana', 'Bagiannya dari sisa estimasi tugas yang bagiannya belum dikirim atau perlu revisi, dengan tenggat sampai akhir minggu itu (termasuk yang sudah lewat). Sisa = estimasi dikurangi semua menit timer di tugas itu, lalu dibagi rata ke semua pengerja. Contoh: tugas 10 jam dengan 2 pengerja masuk 5 jam ke rencana masing-masing'],
                     ['Tanpa estimasi', 'Tugas di kelompok yang sama yang belum punya estimasi. Isi estimasinya supaya rencana akurat'],
                     ['Log kerja dan jam reguler', 'Jam yang tercatat di Log kerja dan jam reguler absen minggu itu'],
                 ],
             },
-            { type: 'p', text: 'Status: **Longgar** di bawah 50 persen kapasitas, **Pas** 50 sampai 79 persen, **Penuh** 80 sampai 100 persen, **Lebih** di atas 100 persen. Orang yang **Lebih** tampil paling atas. Tugas yang menunggu review dan tugas tanpa tenggat tidak masuk rencana.' },
+            { type: 'p', text: 'Status: **Longgar** di bawah 50 persen kapasitas, **Pas** 50 sampai 79 persen, **Penuh** 80 sampai 100 persen, **Lebih** di atas 100 persen. Orang yang **Lebih** tampil paling atas. Bagian yang menunggu review dan tugas tanpa tenggat tidak masuk rencana.' },
             { type: 'p', text: 'Pindah minggu dengan tombol panah atau **Minggu ini**. Team Lead melihat anggota tim yang dia pimpin; PM, PD, dan Superadmin melihat semua karyawan aktif. Manajerial (Team Lead, PM, PD) dan Superadmin tidak masuk daftar Beban kerja.' },
         ],
     },
@@ -1126,14 +1148,15 @@ export const flows: Flow[] = [
                     },
                 ],
             },
-            { kind: 'step', text: 'Pengerja menyalakan timer: Dikerjakan' },
-            { kind: 'step', text: 'Kirim bukti (tautan atau file): sesi timer menjadi baris Log kerja' },
+            { kind: 'step', text: 'Setiap pengerja menyalakan timer sendiri: Dikerjakan' },
+            { kind: 'step', text: 'Setiap pengerja kirim bukti sendiri (tautan atau file): sesi timernya menjadi baris Log kerja' },
+            { kind: 'step', text: 'Semua pengerja sudah kirim: review dimulai' },
             {
                 kind: 'decision',
-                text: 'Review lead',
+                text: 'Review lead, per pengerja',
                 branches: [
-                    { label: 'Setujui', steps: [{ kind: 'end', text: 'Tugas selesai' }] },
-                    { label: 'Minta revisi', steps: [{ kind: 'end', text: 'Perlu revisi: timer lagi, kirim bukti lagi' }] },
+                    { label: 'Setujui', steps: [{ kind: 'end', text: 'Bagian disetujui. Semua bagian disetujui: tugas selesai' }] },
+                    { label: 'Minta revisi', steps: [{ kind: 'end', text: 'Perlu revisi: pengerja itu memperbaiki dan kirim bukti lagi' }] },
                 ],
             },
         ],
@@ -1145,7 +1168,8 @@ export const terms: Term[] = [
     { term: 'Absen pulang', definition: 'Akhir shift. Menutup jendela atau keluar dari aplikasi bukan absen pulang.', article: 'absen-desktop' },
     { term: 'Aku tinggal dulu', definition: 'Tanda untuk waktu PC diam berikutnya, dipasang sebelum meninggalkan PC. Tanda Render menjaga lembur tetap jalan.', article: 'pc-diam' },
     { term: 'Anggaran jam', definition: 'Batas jam kerja untuk proyek atau sub proyek, dibandingkan dengan jam di Log kerja. Hanya PM, PD, dan Superadmin yang melihatnya.', article: 'tahap-milestone' },
-    { term: 'Bukti', definition: 'Tautan atau file hasil kerja yang dikirim untuk review tugas. Wajib kecuali lead mematikannya.', article: 'timer-bukti' },
+    { term: 'Bagian tugas', definition: 'Kerja satu pengerja di sebuah tugas: timer, bukti, dan review sendiri. Statusnya Belum kirim, Menunggu review, Perlu revisi, atau Disetujui.', article: 'timer-bukti' },
+    { term: 'Bukti', definition: 'Tautan atau file hasil kerja yang dikirim untuk review tugas. Setiap pengerja mengirim buktinya sendiri. Wajib kecuali lead mematikannya.', article: 'timer-bukti' },
     { term: 'Cuti', definition: 'Hari kerja yang tidak dipakai bekerja, dengan pengajuan dan persetujuan. Cuti tahunan paling banyak 12 hari kerja per tahun; sisa kuotanya dicatat Superadmin.', article: 'ajukan-cuti' },
     { term: 'Hari bukan hari kerja', definition: 'Akhir pekan, hari libur, atau libur studio. Semua jam di hari itu dihitung lembur, kecuali tanggalnya dibuka sebagai hari kerja.', article: 'bukan-hari-kerja' },
     { term: 'Jam PC berbeda', definition: 'Tanda saat jam Windows di PC berbeda lebih dari 2 menit dari server. Jam server yang dipakai.', article: 'persetujuan' },
@@ -1164,6 +1188,7 @@ export const terms: Term[] = [
     { term: 'Milestone', definition: 'Tanggal penting proyek, misalnya review klien atau delivery, dengan status yang dihitung otomatis.', article: 'tahap-milestone' },
     { term: 'Nama panggilan', definition: 'Nama yang tampil di menu dan daftar tugas. Laporan tetap memakai nama lengkap.', article: 'profil' },
     { term: 'PC diam', definition: 'Waktu tanpa input keyboard atau mouse selama 10 menit atau lebih. Tidak mengurangi jam kerja.', article: 'pc-diam' },
+    { term: 'Pengerja', definition: 'Orang yang ditugaskan ke sebuah tugas. Satu tugas bisa punya beberapa pengerja, paling banyak 20.', article: 'timer-bukti' },
     { term: 'Perintah lembur', definition: 'Perintah dari Team Lead, PM, atau PD sebelum lembur dimulai. Tanpa perintah, lembur ditolak dan tidak dibayar.', article: 'perintah-lembur' },
     { term: 'Perlu dicek', definition: 'Shift yang ditutup di tanda aktif terakhir, bukan saat absen pulang, misalnya karena tidak kembali dalam 90 menit.', article: 'terputus' },
     { term: 'Retake', definition: 'Hasil kerja yang diminta revisi saat review. Rasionya tampil di Monitor kerja.', article: 'monitor-kerja' },

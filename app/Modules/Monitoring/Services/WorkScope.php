@@ -16,9 +16,10 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 /**
  * Whose work Monitor kerja and Beban kerja show (docs/14 1.1).
  *
- * projects.oversee (PM, PD, Superadmin): the whole studio. Anyone else (Team Lead): the members of the teams they
- * lead, plus every task in the sub projects they lead whoever works on it. Tasks of people who left still count;
- * the workload list only has active people. Tasks in deleted projects or sub projects are left out.
+ * projects.oversee (PM, PD, Superadmin): the whole studio. Anyone else (Team Lead): tasks where any assignee is a
+ * member of a team they lead (docs/15), plus every task in the sub projects they lead whoever works on it. Tasks of
+ * people who left still count; the workload list only has active people. Tasks in deleted projects or sub projects
+ * are left out.
  */
 class WorkScope
 {
@@ -78,7 +79,7 @@ class WorkScope
 
         return $query->where(function (Builder $q) use ($parts) {
             if ($parts['team_people'] !== []) {
-                $q->orWhereIn('tasks.assignee_id', $parts['team_people']);
+                $q->orWhereIn('tasks.id', fn (QueryBuilder $a) => $a->select('task_id')->from('task_assignees')->whereIn('user_id', $parts['team_people']));
             }
             if ($parts['led_sub_projects'] !== []) {
                 $q->orWhereIn('tasks.sub_project_id', $parts['led_sub_projects']);

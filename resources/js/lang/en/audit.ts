@@ -91,6 +91,7 @@ export default {
         'task.proposal_approved': 'Task proposal approved',
         'task.proposal_rejected': 'Task proposal rejected',
         'task.claimed': 'Task taken',
+        'task.assignees_changed': 'Task assignees changed',
         'task.submitted': 'Task evidence sent',
         'task.reviewed': 'Task evidence reviewed',
         'branding.updated': 'App settings changed',
@@ -179,6 +180,11 @@ export default {
         shift: 'Shift',
         shift_id: 'Shift number',
         person_id: 'Person',
+        assignee_ids: 'Assignees',
+        assignees_added: 'Assignees added',
+        assignees_removed: 'Assignees removed',
+        part_status: 'Part status',
+        submission_id: 'Evidence submission number',
         work_date: 'Work date',
         proposed_by: 'Proposed by',
         approved_by: 'Approved by',
@@ -194,6 +200,12 @@ export default {
     values: {
         yes: 'Yes',
         no: 'No',
+        part_status: {
+            open: 'Not sent',
+            submitted: 'Waiting for review',
+            changes_requested: 'Needs changes',
+            approved: 'Approved',
+        },
         status: {
             active: 'Active',
             suspended: 'Suspended',

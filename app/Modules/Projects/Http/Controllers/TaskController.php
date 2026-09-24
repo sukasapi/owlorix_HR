@@ -3,7 +3,6 @@
 namespace App\Modules\Projects\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Identity\Models\User;
 use App\Modules\Projects\Enums\TaskPriority;
 use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Http\Requests\DecideTaskRequest;
@@ -15,6 +14,8 @@ use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
 use App\Modules\Projects\Models\TaskSubmission;
 use App\Modules\Projects\Models\TaskWorkSession;
+use App\Modules\Projects\Policies\TaskPolicy;
+use App\Modules\Projects\Services\TaskParts;
 use App\Modules\Projects\Services\TaskPresenter;
 use App\Modules\Projects\Services\TaskTimer;
 use App\Modules\Projects\Services\TaskWorkflow;
@@ -30,14 +31,16 @@ use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Tasks in a sub project (docs/13). A lead adds tasks straight to the list; a member proposes and the lead approves
- * or rejects. The assignee runs the timer and sends evidence; the lead reviews it.
+ * Tasks in a sub project (docs/13, docs/15). A lead adds tasks straight to the list; a member proposes and the lead
+ * approves or rejects. Each assignee runs their own timer and sends their own evidence; the lead reviews each
+ * submission once nobody's part is still open.
  */
 class TaskController extends Controller
 {
     public function __construct(
         private readonly TaskWorkflow $workflow,
         private readonly TaskTimer $timer,
+        private readonly TaskParts $parts,
     ) {}
 
     public function show(Request $request, Task $task): Response
@@ -45,27 +48,63 @@ class TaskController extends Controller
         Gate::authorize('view', $task);
 
         $user = $request->user();
-        $task->load(['project', 'subProject.lead', 'stage', 'assignee', 'creator', 'decider']);
+        $task->load(['project', 'subProject.lead', 'stage', 'assignees', 'creator', 'decider']);
         $isLead = $task->subProject !== null && Gate::allows('lead', $task->subProject);
 
         $sessions = TaskWorkSession::query()->with('user')->where('task_id', $task->id)->orderByDesc('started_at')->limit(200)->get();
-        $unlogged = $sessions->filter(fn (TaskWorkSession $s) => $s->user_id === $user->id && $s->ended_at !== null && $s->work_activity_log_id === null && $s->minutes() >= TaskWorkflow::MIN_LOG_MINUTES);
+        $unlogged = TaskWorkSession::query()
+            ->where('task_id', $task->id)
+            ->where('user_id', $user->id)
+            ->whereNotNull('ended_at')
+            ->whereNull('work_activity_log_id')
+            ->get()
+            ->filter(fn (TaskWorkSession $s) => $s->minutes() >= TaskWorkflow::MIN_LOG_MINUTES);
+
+        // Timer minutes per person over every closed session, and who has a timer running here now
+        $minutes = TaskWorkSession::query()
+            ->where('task_id', $task->id)
+            ->whereNotNull('ended_at')
+            ->groupBy('user_id')
+            ->selectRaw('user_id, sum(timestampdiff(minute, started_at, ended_at)) as minutes')
+            ->pluck('minutes', 'user_id')
+            ->map(fn ($m) => (int) $m);
+        $runningIds = TaskWorkSession::query()->where('task_id', $task->id)->whereNull('ended_at')->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+
+        // TaskPolicy::review, split so the task-wide part runs once instead of once per submission
+        $waitingIds = $task->waitingSubmissions()->pluck('task_submissions.id')->map(fn ($id) => (int) $id)->all();
+        $reviewOpen = $waitingIds !== [] && Gate::allows('reviewOpen', $task);
+        $submissions = $task->submissions()->with(['submitter', 'reviewer'])->orderByDesc('id')->get()
+            ->map(function (TaskSubmission $s) use ($user, $waitingIds, $reviewOpen) {
+                $waiting = in_array($s->id, $waitingIds, true);
+
+                return [
+                    ...TaskPresenter::submission($s),
+                    // Pending but not waiting: the sender was taken off the task (or sent again later)
+                    'waiting' => $waiting,
+                    'can_review' => $waiting && $reviewOpen && TaskPolicy::mayReviewSender($user, $s),
+                ];
+            })
+            ->values();
 
         return Inertia::render('projects/Task', [
             'task' => [
-                ...TaskPresenter::row($task),
+                ...TaskPresenter::row($task, $user),
+                'assignees' => collect(TaskPresenter::assignees($task))->map(fn (array $a) => [
+                    ...$a,
+                    'logged_minutes' => $minutes[$a['id']] ?? 0,
+                    'running' => in_array($a['id'], $runningIds, true),
+                ])->all(),
                 'description' => $task->description,
                 'decider' => TaskPresenter::person($task->decider),
                 'decided_at' => $task->decided_at?->toIso8601String(),
                 'completed_at' => $task->completed_at?->toIso8601String(),
                 'created_at' => $task->created_at?->toIso8601String(),
-                'logged_minutes' => $sessions->sum(fn (TaskWorkSession $s) => $s->minutes()),
+                'logged_minutes' => $minutes->sum(),
                 'project' => ['id' => $task->project->id, 'name' => $task->project->name, 'code' => $task->project->code],
                 'sub_project' => TaskPresenter::subProject($task->subProject),
             ],
             'sessions' => $sessions->map(fn (TaskWorkSession $s) => TaskPresenter::session($s))->values(),
-            'submissions' => $task->submissions()->with(['submitter', 'reviewer'])->orderByDesc('id')->get()
-                ->map(fn (TaskSubmission $s) => TaskPresenter::submission($s))->values(),
+            'submissions' => $submissions,
             'running' => TaskPresenter::timer($this->timer->running($user)?->load('task')),
             'unlogged' => ['count' => $unlogged->count(), 'minutes' => $unlogged->sum(fn (TaskWorkSession $s) => $s->minutes())],
             'can' => [
@@ -74,11 +113,11 @@ class TaskController extends Controller
                 'decide' => Gate::allows('decide', $task),
                 'claim' => Gate::allows('claim', $task),
                 'work' => Gate::allows('work', $task),
-                'review' => Gate::allows('review', $task),
+                'review' => $submissions->contains('can_review', true),
                 'lead' => $isLead,
             ],
-            'people' => $isLead ? User::query()->active()->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
-                ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])->values() : [],
+            'people' => $isLead ? TaskPresenter::assigneeOptions($task->project_id, $task->assignees->modelKeys()) : [],
+            'max_assignees' => TaskRequest::MAX_ASSIGNEES,
             'priorities' => array_map(fn (TaskPriority $p) => $p->value, TaskPriority::cases()),
             'stages' => TaskPresenter::stageOptions(),
             'limits' => ['file_max_kb' => SubmitTaskRequest::FILE_MAX_KB, 'file_types' => SubmitTaskRequest::FILE_TYPES],
@@ -105,18 +144,20 @@ class TaskController extends Controller
                 'description' => $data['description'] ?? null,
                 'status' => $direct ? TaskStatus::Todo : TaskStatus::Proposed,
                 'priority' => $data['priority'],
-                // A proposal is work the proposer plans to do; a lead picks anyone or leaves it open
-                'assignee_id' => $direct ? ($data['assignee_id'] ?? null) : $user->id,
                 'created_by' => $user->id,
                 'due_date' => $data['due_date'] ?? null,
                 'estimate_minutes' => $this->minutes($data['estimate_hours'] ?? null),
                 'evidence_required' => $direct ? (bool) ($data['evidence_required'] ?? true) : true,
             ]);
+
+            // A proposal is work the proposer plans to do; a lead picks any number of people or leaves it open
+            $this->parts->sync($task, $direct ? ($data['assignee_ids'] ?? []) : [$user->id], $user, audit: false);
+
             $auditor->record($direct ? 'task.created' : 'task.proposed', $task, null, [
                 'sub_project_id' => $subProject->id,
                 'title' => $task->title,
                 'status' => $task->status->value,
-                'assignee_id' => $task->assignee_id,
+                'assignee_ids' => $this->parts->ids($task),
                 'stage_id' => $task->stage_id,
             ]);
 
@@ -131,10 +172,12 @@ class TaskController extends Controller
         Gate::authorize('update', $task);
 
         $data = $request->validated();
+        $user = $request->user();
         $isLead = Gate::allows('lead', $task->subProject);
 
-        DB::transaction(function () use ($task, $data, $isLead, $auditor) {
-            $fields = ['title', 'description', 'priority', 'stage_id', 'due_date', 'estimate_minutes', 'assignee_id', 'evidence_required'];
+        DB::transaction(function () use ($task, $data, $user, $isLead, $auditor) {
+            $this->parts->lock($task);
+            $fields = ['title', 'description', 'priority', 'stage_id', 'due_date', 'estimate_minutes', 'evidence_required'];
             $before = $this->snapshot($task, $fields);
 
             $task->forceFill([
@@ -151,14 +194,16 @@ class TaskController extends Controller
             }
 
             if ($isLead) {
-                $task->forceFill([
-                    'assignee_id' => $data['assignee_id'] ?? null,
-                    'evidence_required' => (bool) ($data['evidence_required'] ?? $task->evidence_required),
-                ]);
+                $task->evidence_required = (bool) ($data['evidence_required'] ?? $task->evidence_required);
             }
 
             $task->save();
             $auditor->record('task.updated', $task, $before, $this->snapshot($task, $fields));
+
+            // A form without the list keeps the assignees; a change has its own audit entry
+            if ($isLead && array_key_exists('assignee_ids', $data)) {
+                $this->parts->sync($task, $data['assignee_ids'] ?? [], $user);
+            }
         });
 
         return back()->with('status', __('projects::messages.task_updated'));
@@ -187,7 +232,8 @@ class TaskController extends Controller
         $note = isset($data['note']) ? trim($data['note']) : null;
 
         if ($data['decision'] === 'approve') {
-            $this->workflow->approveProposal($request->user(), $task, $data['assignee_id'] ?? null, $note ?: null);
+            $assignees = array_key_exists('assignee_ids', $data) ? ($data['assignee_ids'] ?? []) : null;
+            $this->workflow->approveProposal($request->user(), $task, $assignees, $note ?: null);
 
             return back()->with('status', __('projects::messages.proposal_approved'));
         }
@@ -241,22 +287,26 @@ class TaskController extends Controller
         return back()->with('status', trans_choice('projects::messages.task_submitted', $logs, ['count' => $logs]));
     }
 
+    /** Review of one submission (docs/15): approve that person's part, or send it back with a note. */
     public function review(ReviewTaskRequest $request, Task $task): RedirectResponse
     {
-        Gate::authorize('review', $task);
-
         $data = $request->validated();
+        $submission = $task->submissions()->with('submitter')->findOrFail($data['submission_id']);
+        Gate::authorize('review', [$task, $submission]);
+
         $note = isset($data['note']) ? trim($data['note']) : null;
+        $name = (string) $submission->submitter?->displayName();
 
         if ($data['decision'] === 'approve') {
-            $this->workflow->approve($request->user(), $task, $note ?: null);
+            $this->workflow->approve($request->user(), $task, $submission, $note ?: null);
+            $key = $task->status === TaskStatus::Done ? 'projects::messages.review_approved_done' : 'projects::messages.review_approved';
 
-            return back()->with('status', __('projects::messages.review_approved'));
+            return back()->with('status', __($key, ['name' => $name]));
         }
 
-        $this->workflow->requestChanges($request->user(), $task, (string) $note);
+        $this->workflow->requestChanges($request->user(), $task, $submission, (string) $note);
 
-        return back()->with('status', __('projects::messages.review_changes'));
+        return back()->with('status', __('projects::messages.review_changes', ['name' => $name]));
     }
 
     /** Evidence file: anyone who can see the task. Private disk, sent as a download. */

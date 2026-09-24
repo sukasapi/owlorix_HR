@@ -333,7 +333,7 @@ class WorkMonitor
     }
 
     /**
-     * Open tasks past their due date or due within a week, earliest first.
+     * Open tasks past their due date or due within a week, earliest first, with every assignee.
      *
      * @return array{total: int, rows: list<array<string, mixed>>}
      */
@@ -347,11 +347,15 @@ class WorkMonitor
         $total = (clone $query)->count();
 
         $rows = $query
-            ->with(['project:id,name,code', 'subProject:id,name', 'assignee:id,name,nickname,username,avatar_path'])
+            ->with([
+                'project:id,name,code',
+                'subProject:id,name',
+                'assignees' => fn ($q) => $q->select(['users.id', 'users.name', 'users.nickname', 'users.username', 'users.avatar_path']),
+            ])
             ->orderBy('tasks.due_date')
             ->orderBy('tasks.id')
             ->limit(self::LIST_LIMIT)
-            ->get(['tasks.id', 'tasks.title', 'tasks.status', 'tasks.project_id', 'tasks.sub_project_id', 'tasks.assignee_id', 'tasks.due_date'])
+            ->get(['tasks.id', 'tasks.title', 'tasks.status', 'tasks.project_id', 'tasks.sub_project_id', 'tasks.due_date'])
             ->map(fn (Task $task) => [
                 'id' => $task->id,
                 'title' => $task->title,
@@ -360,7 +364,7 @@ class WorkMonitor
                 'days_until' => (int) $today->diffInDays(CarbonImmutable::parse($task->due_date->format('Y-m-d'), $today->getTimezone()), false),
                 'project' => $task->project ? ['id' => $task->project->id, 'name' => $task->project->name, 'code' => $task->project->code] : null,
                 'sub_project' => $task->subProject ? ['id' => $task->subProject->id, 'name' => $task->subProject->name] : null,
-                'assignee' => TaskPresenter::person($task->assignee),
+                'assignees' => TaskPresenter::assignees($task),
             ])
             ->all();
 

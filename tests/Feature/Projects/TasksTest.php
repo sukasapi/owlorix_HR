@@ -8,6 +8,7 @@ use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectMember;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Models\TaskAssignee;
 use App\Modules\Projects\Models\TaskWorkSession;
 use App\Modules\Projects\Models\WorkActivityLog;
 use App\Modules\Shared\Audit\AuditLog;
@@ -80,11 +81,11 @@ describe('proposals', function () {
         $proposal = proposeTask($this);
 
         expect($proposal->status)->toBe(TaskStatus::Proposed)
-            ->and($proposal->assignee_id)->toBe($this->member->id)
+            ->and($proposal->assignees()->pluck('users.id')->all())->toBe([$this->member->id])
             ->and(AuditLog::query()->where('action', 'task.proposed')->exists())->toBeTrue();
 
         $this->actingAs($this->lead)
-            ->post(route('projects.tasks.store', [$this->project, $this->sub]), taskPayload(['title' => 'Lighting shot 010', 'assignee_id' => $this->member->id]))
+            ->post(route('projects.tasks.store', [$this->project, $this->sub]), taskPayload(['title' => 'Lighting shot 010', 'assignee_ids' => [$this->member->id]]))
             ->assertSessionHasNoErrors();
 
         expect(Task::query()->where('title', 'Lighting shot 010')->value('status'))->toBe(TaskStatus::Todo);
@@ -138,15 +139,16 @@ describe('timer, evidence, and work log', function () {
             'title' => 'Animasi shot 010_020',
             'status' => TaskStatus::Todo,
             'priority' => 'normal',
-            'assignee_id' => $this->member->id,
             'created_by' => $this->lead->id,
             'evidence_required' => true,
         ]);
+        TaskAssignee::query()->create(['task_id' => $this->task->id, 'user_id' => $this->member->id, 'part_status' => 'open', 'assigned_at' => now()]);
     });
 
     it('runs one timer per person and moves the task to in progress', function () {
         $other = $this->task->replicate()->fill(['title' => 'Animasi shot 010_030']);
         $other->save();
+        TaskAssignee::query()->create(['task_id' => $other->id, 'user_id' => $this->member->id, 'part_status' => 'open', 'assigned_at' => now()]);
 
         $this->travelTo(CarbonImmutable::parse('2026-09-23 02:00:00'));
         $this->actingAs($this->member)->post(route('tasks.start', $this->task))->assertRedirect();
@@ -225,11 +227,14 @@ describe('timer, evidence, and work log', function () {
             'evidence_url' => 'https://drive.example/shot-010-020',
         ]);
 
-        $this->actingAs($this->member)->post(route('tasks.review', $this->task), ['decision' => 'approve'])->assertForbidden();
-        $this->actingAs($this->lead)->post(route('tasks.review', $this->task), ['decision' => 'changes'])->assertSessionHasErrors('note');
+        $first = $this->task->submissions()->sole();
+
+        $this->actingAs($this->member)->post(route('tasks.review', $this->task), ['decision' => 'approve', 'submission_id' => $first->id])->assertForbidden();
+        $this->actingAs($this->lead)->post(route('tasks.review', $this->task), ['decision' => 'approve'])->assertSessionHasErrors('submission_id');
+        $this->actingAs($this->lead)->post(route('tasks.review', $this->task), ['decision' => 'changes', 'submission_id' => $first->id])->assertSessionHasErrors('note');
 
         $this->actingAs($this->lead)
-            ->post(route('tasks.review', $this->task), ['decision' => 'changes', 'note' => 'Tangan kiri masih menembus badan.'])
+            ->post(route('tasks.review', $this->task), ['decision' => 'changes', 'submission_id' => $first->id, 'note' => 'Tangan kiri masih menembus badan.'])
             ->assertSessionHasNoErrors();
 
         expect($this->task->refresh()->status)->toBe(TaskStatus::ChangesRequested)
@@ -239,7 +244,8 @@ describe('timer, evidence, and work log', function () {
             'note' => 'Tangan kiri sudah diperbaiki.',
             'evidence_url' => 'https://drive.example/shot-010-020-v2',
         ])->assertSessionHasNoErrors();
-        $this->actingAs($this->lead)->post(route('tasks.review', $this->task), ['decision' => 'approve'])->assertSessionHasNoErrors();
+        $second = $this->task->submissions()->latest('id')->first();
+        $this->actingAs($this->lead)->post(route('tasks.review', $this->task), ['decision' => 'approve', 'submission_id' => $second->id])->assertSessionHasNoErrors();
 
         expect($this->task->refresh())
             ->status->toBe(TaskStatus::Done)
@@ -247,11 +253,11 @@ describe('timer, evidence, and work log', function () {
     });
 
     it('lets a member take an unassigned task', function () {
-        $this->task->forceFill(['assignee_id' => null])->save();
+        $this->task->parts()->delete();
 
         $this->actingAs($this->outsider)->post(route('tasks.claim', $this->task))->assertForbidden();
         $this->actingAs($this->member)->post(route('tasks.claim', $this->task))->assertRedirect();
 
-        expect($this->task->refresh()->assignee_id)->toBe($this->member->id);
+        expect($this->task->assignees()->pluck('users.id')->all())->toBe([$this->member->id]);
     });
 });

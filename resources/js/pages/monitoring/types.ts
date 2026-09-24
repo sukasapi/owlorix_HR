@@ -1,6 +1,6 @@
 import type { Person } from '@/types';
 import type { Milestone } from '../projects/Milestones';
-import type { PipelinePhase, TaskStatus } from '../projects/taskTypes';
+import type { AssigneeName, PipelinePhase, TaskStatus } from '../projects/taskTypes';
 
 export interface ProjectRef {
     id: number;
@@ -64,7 +64,8 @@ export interface DueTask {
     days_until: number;
     project: ProjectRef | null;
     sub_project: { id: number; name: string } | null;
-    assignee: Person | null;
+    /** Every assignee, first assigned first */
+    assignees: AssigneeName[];
 }
 
 export interface WorkMonitorProps {

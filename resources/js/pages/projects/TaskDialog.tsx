@@ -4,7 +4,8 @@ import { useT } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { X } from '@phosphor-icons/react';
 import { type FormEvent, useId } from 'react';
-import { PHASES, type PersonOption, type StageOption, type TaskPriority } from './taskTypes';
+import { AssigneePicker, assigneeError, sameIds } from './AssigneePicker';
+import { type AssigneeOption, PHASES, type StageOption, type TaskPriority } from './taskTypes';
 
 export interface TaskFormValues {
     id?: number;
@@ -12,7 +13,7 @@ export interface TaskFormValues {
     description: string | null;
     priority: TaskPriority;
     stage_id: number | null;
-    assignee_id: number | null;
+    assignee_ids: number[];
     due_date: string | null;
     estimate_minutes: number | null;
     evidence_required: boolean;
@@ -21,19 +22,21 @@ export interface TaskFormValues {
 interface Props {
     /** create: a lead adds straight to the list; propose: goes to the lead; edit: an existing task */
     mode: 'create' | 'propose' | 'edit';
-    /** Lead fields (assignee, evidence required) are shown only to a lead. */
+    /** Lead fields (assignees, evidence required) are shown only to a lead. */
     lead: boolean;
     projectId?: number;
     subProjectId?: number;
     task?: TaskFormValues;
-    people: PersonOption[];
+    /** Project members (plus current assignees) a lead can tick */
+    people: AssigneeOption[];
+    maxAssignees: number;
     priorities: TaskPriority[];
     /** Every pipeline stage; the picker offers active ones plus the task's own stage if it was switched off. */
     stages: StageOption[];
     onClose: () => void;
 }
 
-export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, priorities, stages, onClose }: Props) {
+export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, maxAssignees, priorities, stages, onClose }: Props) {
     const t = useT();
     const titleId = useId();
     const form = useForm({
@@ -41,7 +44,7 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
         description: task?.description ?? '',
         priority: task?.priority ?? ('normal' as TaskPriority),
         stage_id: task?.stage_id ? String(task.stage_id) : '',
-        assignee_id: task?.assignee_id ? String(task.assignee_id) : '',
+        assignee_ids: task?.assignee_ids ?? ([] as number[]),
         due_date: task?.due_date ?? '',
         estimate_hours: task?.estimate_minutes ? String(Math.round((task.estimate_minutes / 60) * 100) / 100) : '',
         evidence_required: task?.evidence_required ?? true,
@@ -49,9 +52,9 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.transform((data) => ({
+        form.transform(({ assignee_ids, ...data }) => ({
             ...data,
-            assignee_id: data.assignee_id === '' ? null : Number(data.assignee_id),
+            ...(lead && (mode !== 'edit' || !sameIds(assignee_ids, task?.assignee_ids ?? [])) ? { assignee_ids } : {}),
             stage_id: data.stage_id === '' ? null : Number(data.stage_id),
             due_date: data.due_date || null,
             estimate_hours: data.estimate_hours === '' ? null : data.estimate_hours,
@@ -143,14 +146,13 @@ export function TaskDialog({ mode, lead, projectId, subProjectId, task, people, 
                     </div>
                     {lead && (
                         <>
-                            <SelectField label={t('tasks.form.assignee')} value={form.data.assignee_id} onChange={(e) => form.setData('assignee_id', e.target.value)} error={form.errors.assignee_id}>
-                                <option value="">{t('tasks.form.assignee_none')}</option>
-                                {people.map((person) => (
-                                    <option key={person.id} value={person.id}>
-                                        {person.name} ({person.username})
-                                    </option>
-                                ))}
-                            </SelectField>
+                            <AssigneePicker
+                                people={people}
+                                value={form.data.assignee_ids}
+                                onChange={(ids) => form.setData('assignee_ids', ids)}
+                                max={maxAssignees}
+                                error={assigneeError(form.errors as Record<string, string | undefined>)}
+                            />
                             <label className="flex min-h-11 cursor-pointer items-start gap-3">
                                 <input type="checkbox" className="mt-1 size-5 flex-none accent-[var(--primary-bg)]" checked={form.data.evidence_required} onChange={(e) => form.setData('evidence_required', e.target.checked)} />
                                 <span>
