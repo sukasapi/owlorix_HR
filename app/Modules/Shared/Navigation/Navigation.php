@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 class Navigation
 {
     /**
-     * @return list<array{group: string, items: list<array{key: string, route: string, permissions: list<Permission>, unless?: Permission}>}>
+     * @return list<array{group: string, items: list<array{key: string, route: string, permissions: list<Permission>, unless?: Permission, config?: string}>}>
      */
     private function definition(): array
     {
@@ -47,7 +47,8 @@ class Navigation
                 ['key' => 'people', 'route' => 'admin.people.index', 'permissions' => [Permission::ManageUsers]],
                 ['key' => 'teams', 'route' => 'admin.teams.index', 'permissions' => [Permission::ManageTeams]],
                 ['key' => 'devices', 'route' => 'admin.devices.index', 'permissions' => [Permission::ManageDevices]],
-                ['key' => 'imposter', 'route' => 'imposter.index', 'permissions' => [Permission::ImpersonateUsers]],
+                // Only while IMPOSTER_MODE is on; otherwise the route answers 404 and the item would lead nowhere
+                ['key' => 'imposter', 'route' => 'imposter.index', 'permissions' => [Permission::ImpersonateUsers], 'config' => 'owlorix.imposter.enabled'],
             ]],
             ['group' => 'admin', 'items' => [
                 ['key' => 'corrections', 'route' => 'corrections.index', 'permissions' => [Permission::ApplyCorrections]],
@@ -83,7 +84,8 @@ class Navigation
                 }
 
                 $allowed = ($item['permissions'] === [] || collect($item['permissions'])->contains(fn (Permission $p) => $user->hasPermission($p)))
-                    && ! (isset($item['unless']) && $user->hasPermission($item['unless']));
+                    && ! (isset($item['unless']) && $user->hasPermission($item['unless']))
+                    && (! isset($item['config']) || (bool) config($item['config']));
 
                 if ($allowed) {
                     $items[] = ['key' => $item['key'], 'href' => route($item['route'], absolute: false), 'route' => $item['route']];
