@@ -64,6 +64,7 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
                 Route::get('/{task}', [TaskController::class, 'show'])->name('show');
                 Route::put('/{task}', [TaskController::class, 'update'])->name('update');
                 Route::delete('/{task}', [TaskController::class, 'destroy'])->name('destroy');
+                Route::post('/{task}/pindah', [TaskController::class, 'move'])->name('move');
                 Route::post('/{task}/keputusan', [TaskController::class, 'decide'])->name('decide');
                 Route::post('/{task}/ambil', [TaskController::class, 'claim'])->name('claim');
                 Route::post('/{task}/mulai', [TaskController::class, 'start'])->name('start');

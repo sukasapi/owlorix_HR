@@ -498,6 +498,33 @@ export const articles: Article[] = [
         ],
     },
     {
+        id: 'urutan-tugas',
+        chapter: 'proyek',
+        title: 'Urutan tugas',
+        summary: 'Lead sub proyek menentukan tugas mana yang dikerjakan dulu, dengan menyeret atau tombol panah.',
+        audience: ['projects.manage'],
+        keywords: ['urutan', 'urut', 'geser', 'seret', 'drag', 'prioritas', 'atur urutan', 'susun', 'pindah tugas'],
+        questions: ['Cara mengubah urutan tugas', 'Kenapa tugas baru ada di paling bawah?', 'Siapa yang bisa mengatur urutan tugas?'],
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    'Buka sub proyek, lalu tekan **Atur urutan**.',
+                    'Seret tugas lewat pegangan titik-titik di kirinya, di komputer maupun di HP. Dengan keyboard, pakai tombol panah naik dan turun.',
+                    'Urutan tersimpan setiap kali tugas dipindah. Tekan **Selesai mengatur** untuk kembali ke daftar biasa.',
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Yang bisa mengatur: lead sub proyek, serta PM, PD, dan Superadmin. Kalau sub proyek belum punya lead, semua Team Lead bisa.',
+                    'Urutan berlaku di tiap kelompok status, misalnya **Belum mulai**, dan terlihat oleh seluruh tim.',
+                    'Tugas baru masuk paling bawah. Pindahkan ke atas kalau perlu dikerjakan lebih dulu.',
+                ],
+            },
+        ],
+    },
+    {
         id: 'timer-bukti',
         chapter: 'proyek',
         title: 'Timer, bukti, dan review',

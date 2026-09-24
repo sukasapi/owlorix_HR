@@ -218,6 +218,7 @@ export default {
         'projects.tasks.store': 'Menambah tugas',
         'tasks.update': 'Mengubah tugas',
         'tasks.destroy': 'Menghapus tugas',
+        'tasks.move': 'Mengubah urutan tugas',
         'tasks.decide': 'Memutuskan usulan tugas',
         'tasks.claim': 'Mengambil tugas',
         'tasks.start': 'Memulai timer tugas',

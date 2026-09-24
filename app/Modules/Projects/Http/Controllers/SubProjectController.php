@@ -39,8 +39,7 @@ class SubProjectController extends Controller
             ->withLoggedMinutes()
             ->with(['stage', 'assignees', 'creator'])
             ->where('sub_project_id', $subProject->id)
-            ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
-            ->orderByRaw('due_date is null, due_date')
+            ->orderBy('position')
             ->orderBy('id')
             ->get()
             ->map(fn (Task $task) => TaskPresenter::row($task, $user));
@@ -58,6 +57,7 @@ class SubProjectController extends Controller
             'can' => [
                 'manage' => Gate::allows('update', $subProject),
                 'lead' => $isLead,
+                'reorder' => $isLead,
                 'create_task' => Gate::allows('createTask', $subProject),
                 'propose_task' => Gate::allows('proposeTask', $subProject),
                 'budget' => HourBudget::canSee($user),

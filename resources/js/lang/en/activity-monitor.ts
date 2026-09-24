@@ -214,6 +214,7 @@ export default {
         'projects.tasks.store': 'Added a task',
         'tasks.update': 'Changed a task',
         'tasks.destroy': 'Deleted a task',
+        'tasks.move': 'Changed the order of tasks',
         'tasks.decide': 'Decided on a task proposal',
         'tasks.claim': 'Took a task',
         'tasks.start': 'Started a task timer',

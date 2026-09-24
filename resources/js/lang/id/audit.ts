@@ -93,6 +93,7 @@ export default {
         'task.proposed': 'Tugas diusulkan',
         'task.updated': 'Tugas diubah',
         'task.deleted': 'Tugas dihapus',
+        'task.reordered': 'Urutan tugas diubah',
         'task.proposal_approved': 'Usulan tugas disetujui',
         'task.proposal_rejected': 'Usulan tugas ditolak',
         'task.claimed': 'Tugas diambil',

@@ -93,6 +93,7 @@ export default {
         'task.proposed': 'Task proposed',
         'task.updated': 'Task updated',
         'task.deleted': 'Task deleted',
+        'task.reordered': 'Task order changed',
         'task.proposal_approved': 'Task proposal approved',
         'task.proposal_rejected': 'Task proposal rejected',
         'task.claimed': 'Task taken',

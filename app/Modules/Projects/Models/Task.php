@@ -26,6 +26,7 @@ class Task extends Model
         'description',
         'status',
         'priority',
+        'position',
         'created_by',
         'due_date',
         'estimate_minutes',
@@ -41,6 +42,7 @@ class Task extends Model
         return [
             'status' => TaskStatus::class,
             'priority' => TaskPriority::class,
+            'position' => 'integer',
             'due_date' => 'date:Y-m-d',
             'evidence_required' => 'boolean',
             'decided_at' => 'datetime',
