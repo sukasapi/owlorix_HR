@@ -37,7 +37,7 @@ function useReturnFocus(stepOpen: boolean) {
     return trigger;
 }
 
-const visit = { preserveScroll: true, only: ['summary'] };
+const visit = { preserveScroll: true, only: ['summary', 'week'] };
 
 /**
  * The focal panel of Hari ini (DESIGN.md: live timer). Before clock-in its one action is "Absen masuk"; after clock-in

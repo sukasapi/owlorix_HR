@@ -2,6 +2,7 @@
 
 namespace App\Modules\Monitoring\Services;
 
+use App\Modules\Attendance\Services\WeekTarget;
 use App\Modules\Attendance\Support\Time;
 use App\Modules\Calendar\Services\WorkdayResolver;
 use App\Modules\Identity\Models\User;
@@ -18,7 +19,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Beban kerja (docs/14 5.2): one studio week (Monday to Sunday) per person in the viewer's WorkScope.
  *
- * Capacity: the person's workdays that week (Calendar), minus approved leave days, times the regular day limit.
+ * Capacity: the person's weekly work target (docs/02 3.12), which already leaves out holidays and approved leave.
+ * A type without a target (freelance) falls back to their workdays that week minus approved leave, times the regular
+ * day limit.
  * Planned: their share of what is left of the estimates of tasks where their own part is open or needs changes,
  * due that week or already overdue. Left = estimate minus every timer minute on the task, never below 0, split
  * evenly among all assignees of the task (docs/15 section 5). A part already sent waits for the lead, not for them.
@@ -38,6 +41,7 @@ class Workload
         private readonly WorkdayResolver $workdays,
         private readonly LeaveDays $leaveDays,
         private readonly Settings $settings,
+        private readonly WeekTarget $weekTarget,
     ) {}
 
     /** The Monday of the week holding $date (studio date), or of this week when $date is not a valid Y-m-d. */
@@ -80,13 +84,14 @@ class Workload
         $people = $this->scope->peopleQuery($viewer)
             ->orderBy('name')
             ->orderBy('id')
-            ->get(['id', 'name', 'nickname', 'username', 'avatar_path']);
+            ->get(['id', 'name', 'nickname', 'username', 'avatar_path', 'employment_type', 'intern_days_per_week', 'intern_minutes_per_day']);
         $ids = $people->modelKeys();
 
         $calendar = $this->workdays->rangeMany($ids, $monday, $sunday);
         $leave = $this->leaveDays->approvedDates($ids, $monday->toDateString(), $sunday->toDateString());
         $planned = $this->planned($ids, $sunday->toDateString());
         $logged = $this->logged($ids, $range);
+        $targets = $this->weekTarget->forMany($people, $monday);
         $regular = $ids === [] ? collect() : DB::table('shifts')
             ->whereIn('user_id', $ids)
             ->whereBetween('work_date', [$monday->toDateString(), $sunday->toDateString()])
@@ -94,11 +99,12 @@ class Workload
             ->selectRaw('user_id, sum(regular_minutes) as minutes')
             ->pluck('minutes', 'user_id');
 
-        $rows = $people->map(function (User $person) use ($calendar, $leave, $planned, $logged, $regular, $limit) {
+        $rows = $people->map(function (User $person) use ($calendar, $leave, $planned, $logged, $regular, $limit, $targets) {
             $workdays = $calendar[$person->id] ?? [];
             $leaveDays = array_values(array_intersect($workdays, $leave[$person->id] ?? []));
             $days = count($workdays) - count($leaveDays);
-            $capacity = $days * $limit;
+            $target = $targets[$person->id] ?? null;
+            $capacity = $target !== null ? $target['target_minutes'] : $days * $limit;
             $plan = $planned[$person->id] ?? ['minutes' => 0, 'tasks' => 0, 'without_estimate' => 0];
 
             return [
@@ -106,6 +112,7 @@ class Workload
                 'workdays' => count($workdays),
                 'leave_days' => count($leaveDays),
                 'capacity_minutes' => $capacity,
+                'capacity_source' => $target !== null ? $target['kind'] : 'workdays',
                 'planned_minutes' => $plan['minutes'],
                 'planned_tasks' => $plan['tasks'],
                 'without_estimate' => $plan['without_estimate'],

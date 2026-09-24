@@ -10,6 +10,9 @@ export interface PersonRow {
     email: string | null;
     employee_code: string | null;
     employment_type: EmploymentType;
+    /** Interns only; null uses the default on Aturan */
+    intern_days_per_week: number | null;
+    intern_minutes_per_day: number | null;
     status: PersonStatus;
     roles: RoleName[];
     team_ids: number[];
@@ -44,4 +47,11 @@ export interface PeoplePageProps {
     roles: RoleName[];
     statuses: PersonStatus[];
     employment_types: EmploymentType[];
+    intern_defaults: InternDefaults;
+}
+
+/** The intern target on Aturan, shown as the placeholder of the per-person fields */
+export interface InternDefaults {
+    days_per_week: number;
+    minutes_per_day: number;
 }

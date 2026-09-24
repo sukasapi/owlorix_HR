@@ -36,6 +36,10 @@ final class SettingsFields
 
             ['group' => 'web', 'key' => 'attendance.web_clock_in', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '3.11.8', 'applies' => 'web'],
 
+            self::int('work_target', 'target.weekly_hours', 'hours', 1, 60, '3.12.2', 'web'),
+            self::int('work_target', 'target.intern_days_per_week', 'days', 1, 7, '3.12.3', 'web'),
+            self::int('work_target', 'target.intern_minutes_per_day', 'minutes', 30, 720, '3.12.3', 'web'),
+
             self::int('leave', 'leave.annual_quota_days', 'days', 0, 40, '', 'next_request'),
 
             self::int('monitoring', 'monitoring.access_log_days', 'days', 30, 730, '', 'daily'),

@@ -1,4 +1,5 @@
 import { OwlEyes } from '@/components/owl/OwlEyes';
+import { WeekTargetLine } from '@/components/WeekTarget';
 import { Notice } from '@/components/ui/Notice';
 import AppShell from '@/layouts/AppShell';
 import { formatTime } from '@/lib/format';
@@ -198,6 +199,7 @@ function CompactList({ people }: { people: BoardPerson[] }) {
                             {t('team-today.needs_review')}
                         </span>
                     )}
+                    {person.week && <WeekTargetLine week={person.week} className="basis-full" />}
                 </li>
             ))}
         </ul>

@@ -1,6 +1,7 @@
 import AppShell from '@/layouts/AppShell';
 import { formatMinutes, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
+import { WeekTargetCard } from '@/components/WeekTarget';
 import type { DayVerdict } from '@/types';
 import { usePoll } from '@inertiajs/react';
 import { CalendarCheck, CalendarX, CheckCircle, HourglassMedium, Warning } from '@phosphor-icons/react';
@@ -16,7 +17,7 @@ import type { MyDayProps, Shift } from './types';
  * Questions that need an answer (8-hour prompt, "Masih lembur?") sit above it while they wait. Clocking in works here
  * and in the desktop app (docs/02 3.11).
  */
-export default function MyDay({ summary, day }: MyDayProps) {
+export default function MyDay({ summary, day, week }: MyDayProps) {
     const t = useT();
     const locale = useLocale();
     const open = summary.open_shift;
@@ -28,7 +29,7 @@ export default function MyDay({ summary, day }: MyDayProps) {
     const heartbeatFailedAt = useWebHeartbeat(mine, summary.rules.heartbeat_seconds);
 
     // A shift on another device still updates here; the poll may pause in a hidden tab, the heartbeat above may not
-    const poll = usePoll(60_000, { only: ['summary'] }, { autoStart: false });
+    const poll = usePoll(60_000, { only: ['summary', 'week'] }, { autoStart: false });
     useEffect(() => {
         if (live && !mine) poll.start();
         else poll.stop();
@@ -66,9 +67,16 @@ export default function MyDay({ summary, day }: MyDayProps) {
                     <ClockPanel summary={summary} permission={permission} onEnableReminders={requestPermission} heartbeatFailedAt={heartbeatFailedAt} />
                 </div>
 
-                <section className="card flex flex-col gap-3 px-5 py-[18px]" aria-labelledby="today-calendar">
-                    <CalendarCard day={day} webEnabled={summary.web_clock_in_enabled} />
-                </section>
+                <div className="flex min-w-0 flex-col gap-6">
+                    <section className="card flex flex-col gap-3 px-5 py-[18px]" aria-labelledby="today-calendar">
+                        <CalendarCard day={day} webEnabled={summary.web_clock_in_enabled} />
+                    </section>
+                    {week && (
+                        <section className="card flex flex-col gap-3 px-5 py-[18px]" aria-labelledby="week-target">
+                            <WeekTargetCard week={week} />
+                        </section>
+                    )}
+                </div>
             </div>
 
             <FollowUps reports={summary.reports_due} claims={summary.late_claims} reasonMin={summary.rules.reason_min_length} webEnabled={summary.web_clock_in_enabled} />

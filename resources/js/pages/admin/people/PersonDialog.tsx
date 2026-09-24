@@ -6,7 +6,7 @@ import { Link, router, useForm } from '@inertiajs/react';
 import { Key, WarningCircle, X } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { ChoiceTile } from './ChoiceTile';
-import type { EmploymentType, PersonRow, PersonStatus, RoleName, TeamOption } from './types';
+import type { EmploymentType, InternDefaults, PersonRow, PersonStatus, RoleName, TeamOption } from './types';
 
 export type PersonDialogMode = { kind: 'create' } | { kind: 'edit'; person: PersonRow };
 
@@ -19,6 +19,7 @@ interface Props {
     roles: RoleName[];
     statuses: PersonStatus[];
     employment_types: EmploymentType[];
+    internDefaults: InternDefaults;
     currentUserId: number;
     canManageTeams: boolean;
 }
@@ -50,12 +51,18 @@ type FormShape = {
     email: string;
     employee_code: string;
     employment_type: EmploymentType;
+    /** Kept as typed; empty means the Aturan default */
+    intern_days_per_week: string;
+    intern_hours_per_day: string;
     roles: RoleName[];
     team_ids: number[];
     status: PersonStatus;
 };
 
-function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses, employment_types, currentUserId, canManageTeams }: Omit<Props, 'mode'> & { mode: PersonDialogMode; titleId: string }) {
+/** 360 minutes becomes "6", 450 becomes "7.5" (the number input takes a dot). */
+const hoursValue = (minutes: number | null | undefined) => (minutes ? String(Math.round((minutes / 60) * 100) / 100) : '');
+
+function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses, employment_types, internDefaults, currentUserId, canManageTeams }: Omit<Props, 'mode'> & { mode: PersonDialogMode; titleId: string }) {
     const t = useT();
     const person = mode.kind === 'edit' ? mode.person : null;
     const isSelf = person?.id === currentUserId;
@@ -69,6 +76,8 @@ function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses,
         email: person?.email ?? '',
         employee_code: person?.employee_code ?? '',
         employment_type: person?.employment_type ?? 'permanent',
+        intern_days_per_week: person?.intern_days_per_week ? String(person.intern_days_per_week) : '',
+        intern_hours_per_day: hoursValue(person?.intern_minutes_per_day),
         roles: person?.roles ?? ['employee'],
         team_ids: person?.team_ids ?? [],
         status: person?.status ?? 'active',
@@ -208,6 +217,43 @@ function PersonForm({ mode, titleId, onClose, onIssuing, teams, roles, statuses,
                         ))}
                     </div>
                 </ChoiceGroup>
+
+                {form.data.employment_type === 'intern' && (
+                    <fieldset className="m-0 min-w-0 border-0 p-0">
+                        <legend className="label p-0">{t('people.form.intern_target')}</legend>
+                        <p className="help m-0 mt-1">{t('people.form.intern_target_help')}</p>
+                        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                            <TextField
+                                label={t('people.form.intern_days')}
+                                name="intern_days_per_week"
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={7}
+                                step={1}
+                                placeholder={String(internDefaults.days_per_week)}
+                                value={form.data.intern_days_per_week}
+                                onChange={(e) => form.setData('intern_days_per_week', e.target.value)}
+                                help={t('people.form.intern_days_help', { value: internDefaults.days_per_week })}
+                                error={errors.intern_days_per_week}
+                            />
+                            <TextField
+                                label={t('people.form.intern_hours')}
+                                name="intern_hours_per_day"
+                                type="number"
+                                inputMode="decimal"
+                                min={0.5}
+                                max={12}
+                                step={0.25}
+                                placeholder={hoursValue(internDefaults.minutes_per_day)}
+                                value={form.data.intern_hours_per_day}
+                                onChange={(e) => form.setData('intern_hours_per_day', e.target.value)}
+                                help={t('people.form.intern_hours_help', { value: hoursValue(internDefaults.minutes_per_day) })}
+                                error={errors.intern_hours_per_day}
+                            />
+                        </div>
+                    </fieldset>
+                )}
 
                 <ChoiceGroup legend={t('people.form.roles')} help={t('people.form.roles_help')} error={errors.roles ?? firstNested(errors, 'roles')}>
                     <div className="grid gap-2 sm:grid-cols-2">

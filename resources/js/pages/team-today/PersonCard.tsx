@@ -1,4 +1,5 @@
 import { OwlEyes } from '@/components/owl/OwlEyes';
+import { WeekTargetLine } from '@/components/WeekTarget';
 import { formatMinutes, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import { Warning } from '@phosphor-icons/react';
@@ -72,6 +73,7 @@ export function PersonCard({ person, showTeam }: { person: BoardPerson; showTeam
                           })}
                     {showTeam && person.teams.length > 0 && `, ${person.teams.join(', ')}`}
                 </p>
+                {person.week && <WeekTargetLine week={person.week} />}
                 {person.needs_review && (
                     <span className="chip chip-bad mt-1 self-start">
                         <Warning weight="bold" size={15} aria-hidden />

@@ -33,6 +33,8 @@ class User extends Authenticatable
         'email',
         'employee_code',
         'employment_type',
+        'intern_days_per_week',
+        'intern_minutes_per_day',
         'job_title',
         'phone',
         'birth_place',
@@ -67,6 +69,8 @@ class User extends Authenticatable
             'password_changed_at' => 'datetime',
             'status' => UserStatus::class,
             'employment_type' => EmploymentType::class,
+            'intern_days_per_week' => 'integer',
+            'intern_minutes_per_day' => 'integer',
             'birth_date' => 'date:Y-m-d',
             'cv_uploaded_at' => 'datetime',
         ];

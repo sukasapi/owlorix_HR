@@ -21,7 +21,7 @@ class UpdatePerson
     ) {}
 
     /**
-     * @param  array{name: string, email?: ?string, employee_code?: ?string, employment_type: string, roles: list<string>, team_ids?: ?list<int>, status: string}  $data
+     * @param  array{name: string, email?: ?string, employee_code?: ?string, employment_type: string, intern_days_per_week?: ?int, intern_hours_per_day?: int|float|string|null, roles: list<string>, team_ids?: ?list<int>, status: string}  $data
      *
      * @throws ValidationException when a Superadmin guard blocks the change
      */
@@ -44,6 +44,7 @@ class UpdatePerson
                 'email' => $data['email'] ?? null,
                 'employee_code' => $data['employee_code'] ?? null,
                 'employment_type' => $employmentType,
+                ...PersonSnapshot::internTarget($employmentType, $data),
                 'status' => $status,
             ])->save();
 
@@ -116,7 +117,7 @@ class UpdatePerson
             ]);
         }
 
-        $changed = collect(['name', 'email', 'employee_code', 'employment_type', 'team_ids'])
+        $changed = collect(['name', 'email', 'employee_code', 'employment_type', 'intern_days_per_week', 'intern_minutes_per_day', 'team_ids'])
             ->filter(fn (string $key) => $before[$key] !== $after[$key])
             ->values();
 

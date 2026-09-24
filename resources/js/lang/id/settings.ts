@@ -9,6 +9,7 @@ export default {
         idle: 'PC diam',
         desktop_sync: 'Sinkron desktop',
         web: 'Presensi web',
+        work_target: 'Target kerja mingguan',
         leave: 'Cuti',
         monitoring: 'Monitor aktivitas',
     },
@@ -18,6 +19,7 @@ export default {
         idle: 'Kapan aplikasi desktop mencatat PC sedang diam.',
         desktop_sync: 'Tanda aktif, shift terputus, masuk tanpa internet, dan jam PC.',
         web: 'Absen dari browser, termasuk dari HP.',
+        work_target: 'Target jam per minggu menurut jenis karyawan. Hanya ditampilkan di Hari ini, Riwayat, Tim hari ini, dan Beban kerja; tidak memotong jam atau lembur. Freelance tidak punya target.',
         leave: 'Kuota cuti tahunan bawaan.',
         monitoring: 'Berapa lama catatan akses disimpan.',
     },
@@ -97,6 +99,20 @@ export default {
             late_claim_hours: {
                 label: 'Batas klaim lembur susulan',
                 help: 'Setelah shift atau lembur ditutup otomatis, orangnya bisa mengajukan klaim lembur susulan selama waktu ini.',
+            },
+        },
+        target: {
+            weekly_hours: {
+                label: 'Target karyawan tetap dan kontrak',
+                help: 'Jam reguler per minggu (Senin sampai Minggu), dari PC maupun web. Target berkurang sebanding untuk hari libur dan cuti yang disetujui di hari kerja. Lembur tidak ikut dihitung.',
+            },
+            intern_days_per_week: {
+                label: 'Kehadiran magang per minggu',
+                help: 'Bawaan untuk semua anak magang. Bisa diganti per orang di form Orang.',
+            },
+            intern_minutes_per_day: {
+                label: 'Jam kerja magang per hari',
+                help: 'Target jam per hari hadir. Bawaan untuk semua anak magang, bisa diganti per orang. Batas jam reguler dan lembur tetap sama dengan karyawan.',
             },
         },
         leave: {

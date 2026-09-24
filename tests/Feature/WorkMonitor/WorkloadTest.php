@@ -3,6 +3,7 @@
 use App\Modules\Calendar\Enums\CalendarDayType;
 use App\Modules\Calendar\Models\CalendarDay;
 use App\Modules\Identity\Access\Role;
+use App\Modules\Identity\Enums\EmploymentType;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
 use App\Modules\Leave\Enums\LeaveStatus;
@@ -212,4 +213,17 @@ it('reads the week in the same number of queries however many people it lists', 
 
     expect($queries())->toBe($few)->toBeLessThan(40)
         ->and(count(workloadProps($this->viewer)['people']))->toBeGreaterThanOrEqual(7);
+});
+
+it('takes capacity from the weekly work target of the employment type (docs/02 3.12)', function () {
+    $intern = userWithRole(Role::Employee);
+    $intern->forceFill(['employment_type' => EmploymentType::Intern, 'intern_days_per_week' => 2, 'intern_minutes_per_day' => 360])->save();
+    $freelancer = userWithRole(Role::Employee);
+    $freelancer->forceFill(['employment_type' => EmploymentType::Freelance])->save();
+
+    $props = workloadProps($this->viewer);
+
+    // Intern: 2 days of 6 hours; freelancers have no target, so their workdays times the regular limit
+    expect(workloadRow($props, $intern))->toMatchArray(['capacity_minutes' => 720, 'capacity_source' => 'intern'])
+        ->and(workloadRow($props, $freelancer))->toMatchArray(['capacity_minutes' => 5 * 480, 'capacity_source' => 'workdays']);
 });

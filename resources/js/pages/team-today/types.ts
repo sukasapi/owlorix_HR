@@ -1,4 +1,5 @@
 import type { EyeState } from '@/components/owl/OwlEyes';
+import type { WeekTargetData } from '@/types';
 
 export type BoardGroup = 'attention' | 'overtime' | 'working' | 'idle' | 'out' | 'leave' | 'not_started';
 export type BoardStatus = 'prompted' | 'report_due' | 'overtime' | 'open' | 'idle' | 'interrupted' | 'out' | 'leave' | 'not_started';
@@ -24,6 +25,8 @@ export interface BoardPerson {
     needs_review: boolean;
     /** Approved leave today (docs/14); someone who clocks in anyway shows by their shift */
     leave: { type: string } | null;
+    /** This week against the weekly target (docs/02 3.12); null for a type without one */
+    week: WeekTargetData | null;
 }
 
 export interface Board {

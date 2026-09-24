@@ -7,7 +7,7 @@ import { useForm, usePage } from '@inertiajs/react';
 import { ArrowCounterClockwise, CheckCircle, Globe, Info, WarningCircle } from '@phosphor-icons/react';
 import { type FormEvent, useId, useRef, useState } from 'react';
 
-type Group = 'work_hours' | 'overtime' | 'idle' | 'desktop_sync' | 'web' | 'leave' | 'monitoring';
+type Group = 'work_hours' | 'overtime' | 'idle' | 'desktop_sync' | 'web' | 'work_target' | 'leave' | 'monitoring';
 type Unit = 'minutes' | 'hours' | 'seconds' | 'days';
 
 interface SettingField {
@@ -32,7 +32,7 @@ interface PageProps {
 
 type Values = Record<string, string | boolean>;
 
-const GROUPS: Group[] = ['work_hours', 'overtime', 'idle', 'desktop_sync', 'web', 'leave', 'monitoring'];
+const GROUPS: Group[] = ['work_hours', 'overtime', 'idle', 'desktop_sync', 'web', 'work_target', 'leave', 'monitoring'];
 
 const toInput = (field: SettingField): string | boolean => (field.type === 'boolean' ? Boolean(field.value) : String(field.value));
 

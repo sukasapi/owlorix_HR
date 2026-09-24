@@ -30,6 +30,9 @@ class StorePersonRequest extends FormRequest
             'email' => ['nullable', 'string', 'email', 'max:190', Rule::unique('users', 'email')],
             'employee_code' => ['nullable', 'string', 'max:30', Rule::unique('users', 'employee_code')],
             'employment_type' => ['required', Rule::enum(EmploymentType::class)],
+            // Intern target per person (docs/02 3.12); empty uses the default on Aturan
+            'intern_days_per_week' => ['nullable', 'integer', 'between:1,7'],
+            'intern_hours_per_day' => ['nullable', 'numeric', 'min:0.5', 'max:12', 'multiple_of:0.25'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['required', 'string', 'distinct', Rule::enum(Role::class)],
             'team_ids' => ['nullable', 'array'],

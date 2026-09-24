@@ -31,6 +31,7 @@ class TeamBoard
     public function __construct(
         private readonly ShiftStateResolver $resolver,
         private readonly LeaveDays $leaveDays,
+        private readonly WeekTarget $weekTarget,
     ) {}
 
     /**
@@ -53,7 +54,7 @@ class TeamBoard
             ->with(['teams' => fn ($q) => $q->select('teams.id', 'teams.name', 'teams.lead_user_id')->orderBy('name')])
             ->orderBy('name')
             ->orderBy('id')
-            ->get(['id', 'name', 'username']);
+            ->get(['id', 'name', 'username', 'employment_type', 'intern_days_per_week', 'intern_minutes_per_day']);
 
         $ids = $people->modelKeys();
         $onLeave = $this->leaveDays->onDate($ids, $today);
@@ -85,6 +86,10 @@ class TeamBoard
 
             return $this->row($person, $shifts, $carriedResolved?->result->isLive() ? $carriedResolved : null, $today, $leave);
         });
+
+        // Each person's week against their target (docs/02 3.12); null for a type without one
+        $weeks = $this->weekTarget->forMany($people, WeekTarget::mondayOf($today), $now);
+        $rows = $rows->map(fn (array $row) => [...$row, 'week' => $weeks[$row['id']] ?? null]);
 
         $hostnames = Device::query()->whereIn('id', $rows->pluck('device')->filter()->unique())->pluck('hostname', 'id');
 

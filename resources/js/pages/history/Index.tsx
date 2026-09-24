@@ -9,6 +9,7 @@ import { monthLabel } from './dates';
 import { MonthGrid } from './MonthGrid';
 import { MonthList } from './MonthList';
 import { MonthTotals } from './MonthTotals';
+import { WeekList } from './WeekList';
 import type { HistoryPageProps } from './types';
 
 type MonthLoad = { state: 'idle' } | { state: 'loading' | 'error'; month: string };
@@ -23,7 +24,7 @@ function initialDate(url: string, days: HistoryPageProps['days']): string | null
  * Riwayat. The month recap is the focal point; below it the month as a table on wide screens and a list of dates on
  * phones and tablets. A date with shifts opens its timeline. Everything is the signed-in person's own data.
  */
-export default function HistoryIndex({ month, totals, days, web_clock_in_enabled: webClock, rules }: HistoryPageProps) {
+export default function HistoryIndex({ month, totals, days, weeks, web_clock_in_enabled: webClock, rules }: HistoryPageProps) {
     const t = useT();
     const locale = useLocale();
     const { url } = usePage();
@@ -113,6 +114,8 @@ export default function HistoryIndex({ month, totals, days, web_clock_in_enabled
                             <div className="xl:hidden">
                                 <MonthList days={days} labelledBy={monthHeadingId} busy={busy} onSelect={setSelected} />
                             </div>
+
+                            {weeks && <WeekList weeks={weeks} busy={busy} />}
                         </>
                     )}
                 </section>

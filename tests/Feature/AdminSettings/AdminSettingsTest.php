@@ -186,3 +186,25 @@ describe('the engine reads the new values', function () {
             ->and($result->clockOutAt->toIso8601ZuluString())->toBe('2026-09-14T03:00:00Z');
     });
 });
+
+describe('weekly work target', function () {
+    it('lets Superadmin set the targets and refuses values out of range', function () {
+        $this->actingAs($this->admin)->put(route('admin.settings.update'), ['values' => [
+            ...currentRuleValues(),
+            'target.weekly_hours' => 35,
+            'target.intern_days_per_week' => 1,
+            'target.intern_minutes_per_day' => 300,
+        ]])->assertSessionHasNoErrors();
+
+        $settings = app(Settings::class);
+        expect($settings->int('target.weekly_hours'))->toBe(35)
+            ->and($settings->int('target.intern_days_per_week'))->toBe(1)
+            ->and($settings->int('target.intern_minutes_per_day'))->toBe(300);
+
+        $this->actingAs($this->admin)->put(route('admin.settings.update'), ['values' => [
+            ...currentRuleValues(),
+            'target.weekly_hours' => 0,
+            'target.intern_days_per_week' => 8,
+        ]])->assertSessionHasErrors(['target.weekly_hours' => 'range', 'target.intern_days_per_week' => 'range']);
+    });
+});

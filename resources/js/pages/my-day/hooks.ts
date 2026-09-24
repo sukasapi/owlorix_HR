@@ -38,7 +38,7 @@ export function useWebHeartbeat(active: boolean, seconds: number): string | null
         // A refusal (web clock-in turned off, session ended) shows its effect on the page instead of a dialog
         const refused = () => {
             fail();
-            router.reload({ only: ['summary'], onHttpException: () => false, onNetworkError: () => false });
+            router.reload({ only: ['summary', 'week'], onHttpException: () => false, onNetworkError: () => false });
             return false;
         };
         let lastBeat = Date.now();
@@ -48,7 +48,7 @@ export function useWebHeartbeat(active: boolean, seconds: number): string | null
                 route('web-clock.heartbeat'),
                 {},
                 {
-                    only: ['summary'],
+                    only: ['summary', 'week'],
                     preserveScroll: true,
                     preserveState: true,
                     preserveErrors: true,

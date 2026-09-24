@@ -26,6 +26,10 @@ return [
         'monitoring.access_log_days' => 365,
         // Yearly annual-leave days when a person has no leave_quotas row (docs/14)
         'leave.annual_quota_days' => 12,
+        // Weekly work targets per employment type (docs/02 3.12). Shown to people, never used to cut pay or time.
+        'target.weekly_hours' => 40,
+        'target.intern_days_per_week' => 2,
+        'target.intern_minutes_per_day' => 480,
     ],
 
     // Defaults for Pengaturan aplikasi (docs/13). Rows `branding.<key>` in the `settings` table override these.

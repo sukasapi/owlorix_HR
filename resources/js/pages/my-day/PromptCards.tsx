@@ -8,7 +8,7 @@ import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } fr
 import { useEyesMotion } from './hooks';
 import { errorText, type OpenShift, type PresenceCheck, type Summary } from './types';
 
-const visit = { preserveScroll: true, only: ['summary'] };
+const visit = { preserveScroll: true, only: ['summary', 'week'] };
 
 /** Buttons stay disabled for a moment after the choices appear, so a stray key press cannot answer (DESIGN.md G8). */
 const ARM_MS = 1500;

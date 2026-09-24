@@ -3,6 +3,7 @@
 namespace App\Modules\Attendance\Services;
 
 use App\Modules\Attendance\Calculation\ShiftRules;
+use App\Modules\Attendance\Models\Shift;
 use App\Modules\Attendance\Support\Time;
 use App\Modules\Calendar\Services\WorkdayResolver;
 use App\Modules\Identity\Models\Device;
@@ -27,6 +28,7 @@ class HistoryMonth
         private readonly OvertimeHistory $overtime,
         private readonly WebClock $webClock,
         private readonly Settings $settings,
+        private readonly WeekTarget $weekTarget,
     ) {}
 
     /** Parses `YYYY-MM`; anything else falls back to the current studio month. */
@@ -168,6 +170,7 @@ class HistoryMonth
             'days' => $days,
             // Reports due and late claims can also be written on Hari ini while web clock-in is on (3.11.7)
             'web_clock_in_enabled' => $this->webClock->enabled(),
+            'weeks' => $this->weeks($user, $start, $end, $today, $now),
             // Rule values the page quotes, so its sentences follow the settings
             'rules' => [
                 'regular_limit_minutes' => $this->settings->int('attendance.regular_limit_minutes'),
@@ -177,5 +180,38 @@ class HistoryMonth
                 'late_claim_hours' => $this->settings->int('overtime.late_claim_hours'),
             ],
         ];
+    }
+
+    /**
+     * Every studio week (Monday to Sunday) that touches the month and has started, from the week of the person's
+     * first shift, against their weekly target (docs/02 3.12). Weeks run past the month edges, so a week is whole.
+     * Null for a type without a target.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function weeks(User $user, CarbonImmutable $start, CarbonImmutable $end, string $today, CarbonImmutable $now): ?array
+    {
+        if ($this->weekTarget->rule($user) === null) {
+            return null;
+        }
+
+        $current = WeekTarget::mondayOf($today)->toDateString();
+        // Weeks before the person's first shift are before they started working here, not weeks short of the target
+        $first = Shift::query()->where('user_id', $user->id)->min('work_date');
+        $from = WeekTarget::mondayOf(min((string) ($first ?? $today), $today))->toDateString();
+        $mondays = [];
+
+        for ($monday = WeekTarget::mondayOf($start->toDateString()); $monday->toDateString() <= $end->toDateString() && $monday->toDateString() <= $today; $monday = $monday->addWeek()) {
+            if ($monday->toDateString() >= $from) {
+                $mondays[] = $monday;
+            }
+        }
+
+        $weeks = array_map(
+            fn (array $week) => [...$week, 'is_current' => $week['week_start'] === $current],
+            $this->weekTarget->weeksOf($user, $mondays, $now),
+        );
+
+        return $weeks;
     }
 }
