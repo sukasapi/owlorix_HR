@@ -35,6 +35,12 @@ class WorkdayResolver
         return $this->range($user, $day, $day)[$day];
     }
 
+    /** Days in the default work week (Monday to Friday is 5), before holidays and opened dates. */
+    public function workWeekLength(): int
+    {
+        return WorkWeekDay::query()->where('is_workday', true)->count();
+    }
+
     /**
      * @return array<string, DayVerdict> keyed by Y-m-d, inclusive of both ends
      */

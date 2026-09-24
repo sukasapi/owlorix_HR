@@ -75,6 +75,16 @@ export default {
         filter_empty: 'Tidak ada tugas di tahap ini.',
         filter_reset: 'Tampilkan semua tahap',
     },
+    order: {
+        start: 'Atur urutan',
+        done: 'Selesai mengatur',
+        hint: 'Seret tugas lewat pegangan di kirinya, atau pakai tombol panah. Urutan berlaku di tiap kelompok status dan terlihat oleh seluruh tim. Tugas baru masuk paling bawah.',
+        handle: 'Seret untuk memindah',
+        up_label: 'Naikkan :name',
+        down_label: 'Turunkan :name',
+        moved: ':name sekarang di urutan :position dari :total.',
+        failed: 'Urutan belum tersimpan. Periksa koneksi ke server studio, lalu coba lagi.',
+    },
     form: {
         create_title: 'Tugas baru',
         propose_title: 'Usulkan tugas',

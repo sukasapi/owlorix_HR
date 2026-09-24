@@ -1,4 +1,4 @@
-import type { DayVerdict } from '@/types';
+import type { DayVerdict, WeekTargetData } from '@/types';
 
 export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
 export type IdleTag = 'rendering' | 'meeting' | 'break' | 'other';
@@ -96,5 +96,7 @@ export interface HistoryPageProps {
     days: HistoryDay[];
     /** Reports due and late claims can also be written on Hari ini */
     web_clock_in_enabled: boolean;
+    /** Studio weeks touching the month against the weekly target (docs/02 3.12); null for a type without one */
+    weeks: (WeekTargetData & { is_current: boolean })[] | null;
     rules: HistoryRules;
 }

@@ -191,6 +191,7 @@ export default function PeopleIndex() {
                 roles={roles}
                 statuses={statuses}
                 employment_types={employment_types}
+                internDefaults={props.intern_defaults}
                 currentUserId={props.auth?.user.id ?? 0}
                 canManageTeams={canManageTeams}
             />

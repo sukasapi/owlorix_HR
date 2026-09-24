@@ -30,6 +30,12 @@ class TaskPolicy
         return $this->leads($user, $task);
     }
 
+    /** The order of the list is the lead's call: what the team picks up first. */
+    public function reorder(User $user, Task $task): bool
+    {
+        return $this->leads($user, $task);
+    }
+
     public function decide(User $user, Task $task): bool
     {
         return $task->status === TaskStatus::Proposed && $this->leads($user, $task);

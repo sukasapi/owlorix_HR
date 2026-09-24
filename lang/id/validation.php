@@ -171,6 +171,8 @@ return [
         'status' => 'status',
         'roles' => 'peran',
         'teams' => 'tim',
+        'intern_days_per_week' => 'hadir per minggu',
+        'intern_hours_per_day' => 'jam kerja per hari',
         'team_ids' => 'tim',
         'lead_user_id' => 'team lead',
         'date' => 'tanggal',

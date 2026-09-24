@@ -20,7 +20,11 @@ export function Dialog({ open, onClose, labelledBy, children, width = 'max-w-[56
     useEffect(() => {
         const dialog = ref.current;
         if (!dialog) return;
-        if (open && !dialog.open) dialog.showModal();
+        if (open && !dialog.open) {
+            dialog.showModal();
+            // showModal() focuses the first control (the close button); React's autoFocus runs before it and is lost
+            dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+        }
         if (!open && dialog.open) dialog.close();
     }, [open]);
 

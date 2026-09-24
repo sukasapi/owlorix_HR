@@ -9,7 +9,7 @@ import { type FormEvent, useId, useState } from 'react';
 import { toStudioInput } from './hooks';
 import { errorText, type LateClaim, type ReportDue } from './types';
 
-const visit = { preserveScroll: true, only: ['summary'] };
+const visit = { preserveScroll: true, only: ['summary', 'week'] };
 
 /**
  * Overtime reports still due and late claims still possible, from any device (3.4.2, 3.3.6, 3.5.5). With web

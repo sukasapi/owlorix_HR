@@ -74,6 +74,25 @@ export interface SharedProps {
     [key: string]: unknown;
 }
 
+/** One person's week against their weekly work target (docs/02 3.12). Absent (null) for a type without one. */
+export interface WeekTargetData {
+    kind: 'hours' | 'intern';
+    week_start: string;
+    week_end: string;
+    /** The target of a week without holidays or leave */
+    full_target_minutes: number;
+    target_minutes: number;
+    /** Regular minutes only; overtime does not fill the target */
+    worked_minutes: number;
+    short_minutes: number;
+    available_days: number;
+    leave_days: number;
+    attended_days: number;
+    /** Interns: days present asked for this week */
+    target_days: number | null;
+    minutes_per_day: number | null;
+}
+
 export interface DayVerdict {
     date: string;
     is_workday: boolean;

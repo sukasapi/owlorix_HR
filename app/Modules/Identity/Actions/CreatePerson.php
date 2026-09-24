@@ -18,7 +18,7 @@ class CreatePerson
     ) {}
 
     /**
-     * @param  array{name: string, username: string, email?: ?string, employee_code?: ?string, employment_type: string, roles: list<string>, team_ids?: ?list<int>}  $data
+     * @param  array{name: string, username: string, email?: ?string, employee_code?: ?string, employment_type: string, intern_days_per_week?: ?int, intern_hours_per_day?: int|float|string|null, roles: list<string>, team_ids?: ?list<int>}  $data
      * @return array{user: User, password: string}
      */
     public function __invoke(array $data): array
@@ -33,6 +33,7 @@ class CreatePerson
                 'email' => $data['email'] ?? null,
                 'employee_code' => $data['employee_code'] ?? null,
                 'employment_type' => EmploymentType::from($data['employment_type']),
+                ...PersonSnapshot::internTarget(EmploymentType::from($data['employment_type']), $data),
                 'password' => $password,
                 'must_change_password' => true,
                 'password_changed_at' => null,

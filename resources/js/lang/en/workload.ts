@@ -17,7 +17,7 @@ export default {
     },
     notes: {
         heading: 'How to read this',
-        capacity: "Capacity: the person's workdays in the chosen week from the Calendar, minus approved leave days, times :limit.",
+        capacity: "Capacity: the person's weekly work target (permanent and contract from the Rules page, interns from their own days and hours), already lowered for holidays and approved leave. Freelancers have no target: workdays that week minus leave, times :limit.",
         planned:
             'Planned: their share of what is left of the estimates of tasks where their part is not sent yet or needs changes, due in the chosen week or earlier. Left = estimate minus every timer minute on the task (never below 0), split evenly among all assignees of the task.',
         review: 'Parts sent and waiting for review are not counted: the work was sent, the decision is with the lead.',

@@ -9,6 +9,7 @@ export default {
         idle: 'Idle PC',
         desktop_sync: 'Desktop sync',
         web: 'Web attendance',
+        work_target: 'Weekly work target',
         leave: 'Leave',
         monitoring: 'Activity monitor',
     },
@@ -18,6 +19,7 @@ export default {
         idle: 'When the desktop app records a PC as idle.',
         desktop_sync: 'Signs of activity, interrupted shifts, offline sign-in, and PC clocks.',
         web: 'Clocking in from a browser, phones included.',
+        work_target: 'Hours per week by employment type. Only shown on Today, History, Team today, and Workload; it never cuts time or overtime. Freelancers have no target.',
         leave: 'Default yearly leave quota.',
         monitoring: 'How long access records are kept.',
     },
@@ -97,6 +99,20 @@ export default {
             late_claim_hours: {
                 label: 'Late overtime claim window',
                 help: 'After a shift or overtime is closed automatically, the person can file a late overtime claim for this long.',
+            },
+        },
+        target: {
+            weekly_hours: {
+                label: 'Target for permanent and contract staff',
+                help: 'Regular hours per week (Monday to Sunday), from a PC or the web. The target shrinks in step for holidays and approved leave on workdays. Overtime does not count.',
+            },
+            intern_days_per_week: {
+                label: 'Intern attendance per week',
+                help: 'Default for every intern. Can be changed per person on the People form.',
+            },
+            intern_minutes_per_day: {
+                label: 'Intern hours per day',
+                help: 'Target hours per day present. Default for every intern, can be changed per person. The regular limit and overtime stay the same as for staff.',
             },
         },
         leave: {

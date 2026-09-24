@@ -15,6 +15,7 @@ use App\Modules\Identity\Http\Requests\StorePersonRequest;
 use App\Modules\Identity\Http\Requests\UpdatePersonRequest;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Team;
+use App\Modules\Shared\Settings\Settings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class PeopleController extends Controller
 {
     private const PER_PAGE = 25;
 
-    public function index(Request $request): Response
+    public function index(Request $request, Settings $settings): Response
     {
         $filters = $this->filters($request);
 
@@ -54,6 +55,8 @@ class PeopleController extends Controller
                 'email' => $user->email,
                 'employee_code' => $user->employee_code,
                 'employment_type' => $user->employment_type->value,
+                'intern_days_per_week' => $user->intern_days_per_week,
+                'intern_minutes_per_day' => $user->intern_minutes_per_day,
                 'status' => $user->status->value,
                 'roles' => $this->orderedRoles($user),
                 'team_ids' => $user->teams->sortBy('name')->pluck('id')->values(),
@@ -66,6 +69,10 @@ class PeopleController extends Controller
             'roles' => array_map(fn (Role $role) => $role->value, Role::cases()),
             'statuses' => array_map(fn (UserStatus $status) => $status->value, UserStatus::cases()),
             'employment_types' => array_map(fn (EmploymentType $type) => $type->value, EmploymentType::cases()),
+            'intern_defaults' => [
+                'days_per_week' => $settings->int('target.intern_days_per_week'),
+                'minutes_per_day' => $settings->int('target.intern_minutes_per_day'),
+            ],
         ]);
     }
 

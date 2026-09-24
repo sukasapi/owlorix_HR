@@ -133,7 +133,7 @@ export const articles: Article[] = [
             },
             { type: 'flow', flow: 'alur-absen' },
             { type: 'note', title: 'Tombol X bukan absen pulang', text: 'Menutup jendela hanya menyembunyikannya ke tray. **Keluar dari aplikasi** di menu Lainnya juga tidak mengabsen pulang. Untuk berhenti kerja, pakai **Absen pulang**.' },
-            { type: 'p', text: 'Pulang sebelum 8 jam boleh. Tanggal itu ditandai **Kurang dari 8 jam** di Riwayat.' },
+            { type: 'p', text: 'Pulang sebelum 8 jam boleh. Tanggal itu ditandai **Kurang dari 8 jam** di Riwayat, dan kekurangannya terlihat di **Minggu ini** (lihat Target kerja mingguan).' },
             { type: 'image', src: '/img/panduan/d-masuk.webp', alt: 'Layar masuk aplikasi desktop', caption: 'Layar masuk: nama PC di bawah judul, status koneksi di bawah tombol (pratinjau dengan data contoh).', wide: true },
             { type: 'image', src: '/img/panduan/d-status.webp', alt: 'Layar status aplikasi desktop setelah absen masuk', caption: 'Layar status: jam kerja hari ini, bukti tercatat, dan tombol Absen pulang (pratinjau dengan data contoh).' },
         ],
@@ -279,6 +279,37 @@ export const articles: Article[] = [
         blocks: [
             { type: 'p', text: 'Menu **Riwayat** menampilkan shift per bulan dalam bentuk kalender. **Rekap** di atas berisi jam reguler, lembur per status, PC diam, hari kurang dari 8 jam, dan kerja di hari bukan hari kerja.' },
             { type: 'p', text: 'Pilih tanggal untuk melihat **Urutan kejadian**: absen masuk, PC diam, tanda 8 jam, mulai lembur, absen pulang, beserta alasan dan keputusan lembur. Shift yang lewat tengah malam masuk ke tanggal absen masuknya.' },
+        ],
+    },
+    {
+        id: 'target-mingguan',
+        chapter: 'absen',
+        title: 'Target kerja mingguan',
+        summary: 'Target jam per minggu menurut jenis karyawan: tetap dan kontrak 40 jam, magang sesuai hari dan jamnya, freelance tanpa target.',
+        audience: ['attendance.clock_in'],
+        keywords: ['target', '40 jam', 'mingguan', 'minggu ini', 'kurang jam', 'magang', 'intern', 'freelance', 'kontrak', 'karyawan tetap', 'pulang cepat'],
+        questions: ['Berapa target jam saya minggu ini?', 'Pulang sebelum 8 jam, bagaimana?', 'Target magang berapa?', 'Apakah lembur mengisi target?'],
+        blocks: [
+            { type: 'p', text: 'Kotak **Minggu ini** di Hari ini menunjukkan jam reguler minggu ini (Senin sampai Minggu) dibanding targetmu, dan berapa yang kurang. Jam dari PC dan dari web sama-sama dihitung.' },
+            {
+                type: 'table',
+                head: ['Jenis karyawan', 'Target'],
+                rows: [
+                    ['Tetap dan kontrak', '40 jam per minggu (diatur Superadmin). Berkurang 8 jam untuk setiap hari libur atau cuti yang disetujui di hari kerja'],
+                    ['Magang', 'Jumlah hari hadir per minggu × jam per hari, bawaan 2 hari × 8 jam. Superadmin bisa mengubahnya per orang'],
+                    ['Freelance', 'Tanpa target'],
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Hanya jam reguler yang dihitung. Lembur diajukan dan dibayar terpisah, jadi tidak mengisi target.',
+                    'Pulang sebelum 8 jam boleh. Hari itu tetap ditandai **Kurang dari 8 jam**, dan kekurangannya bisa ditutup di hari lain minggu yang sama.',
+                    'Shift terputus yang tidak dilanjutkan sampai hari selesai membuat jam hari itu kurang, dan ikut terlihat sebagai kekurangan minggu itu.',
+                    'Target hanya ditampilkan. Tidak memotong jam, tidak mengubah pengingat 8 jam, dan tidak mengubah lembur.',
+                ],
+            },
+            { type: 'p', text: '**Riwayat** menampilkan setiap minggu di bulan itu dengan target dan kekurangannya. Team Lead melihat baris **Minggu ini** di setiap kartu Tim hari ini.' },
         ],
     },
     {
@@ -498,6 +529,33 @@ export const articles: Article[] = [
         ],
     },
     {
+        id: 'urutan-tugas',
+        chapter: 'proyek',
+        title: 'Urutan tugas',
+        summary: 'Lead sub proyek menentukan tugas mana yang dikerjakan dulu, dengan menyeret atau tombol panah.',
+        audience: ['projects.manage'],
+        keywords: ['urutan', 'urut', 'geser', 'seret', 'drag', 'prioritas', 'atur urutan', 'susun', 'pindah tugas'],
+        questions: ['Cara mengubah urutan tugas', 'Kenapa tugas baru ada di paling bawah?', 'Siapa yang bisa mengatur urutan tugas?'],
+        blocks: [
+            {
+                type: 'steps',
+                items: [
+                    'Buka sub proyek, lalu tekan **Atur urutan**.',
+                    'Seret tugas lewat pegangan titik-titik di kirinya, di komputer maupun di HP. Dengan keyboard, pakai tombol panah naik dan turun.',
+                    'Urutan tersimpan setiap kali tugas dipindah. Tekan **Selesai mengatur** untuk kembali ke daftar biasa.',
+                ],
+            },
+            {
+                type: 'list',
+                items: [
+                    'Yang bisa mengatur: lead sub proyek, serta PM, PD, dan Superadmin. Kalau sub proyek belum punya lead, semua Team Lead bisa.',
+                    'Urutan berlaku di tiap kelompok status, misalnya **Belum mulai**, dan terlihat oleh seluruh tim.',
+                    'Tugas baru masuk paling bawah. Pindahkan ke atas kalau perlu dikerjakan lebih dulu.',
+                ],
+            },
+        ],
+    },
+    {
         id: 'timer-bukti',
         chapter: 'proyek',
         title: 'Timer, bukti, dan review',
@@ -569,6 +627,35 @@ export const articles: Article[] = [
             { type: 'p', text: '**Tahap** menunjukkan di bagian pipeline mana sebuah tugas berada, misalnya Storyboard, Animasi, atau Compositing. Pilih tahap saat membuat atau mengubah tugas. Di halaman sub proyek, daftar tugas bisa disaring per tahap.' },
             { type: 'p', text: '**Milestone** ada di halaman proyek: nama, jenis (internal, review klien, delivery), dan tanggal. Statusnya dihitung otomatis: **Terjadwal**, **Segera** (7 hari lagi atau kurang), **Terlambat**, atau **Selesai**. Team Lead, PM, PD, dan Superadmin bisa menambah, mengubah, dan menandai selesai.' },
             { type: 'p', text: '**Anggaran jam** diisi dalam jam di form proyek dan sub proyek, hanya oleh Project Manager, Project Director, dan Superadmin, dan hanya mereka yang melihat angkanya. Jam terpakai dihitung dari **Log kerja**, jadi sesi timer baru terhitung setelah bukti dikirim. Meter berubah emas mulai 80 persen dan merah lewat 100 persen.' },
+        ],
+    },
+    {
+        id: 'dokumen-proyek',
+        chapter: 'proyek',
+        title: 'Dokumen proyek',
+        summary: 'Tautan folder dan file Google Drive per tahap, langsung di halaman proyek.',
+        audience: ['projects.view', 'projects.manage'],
+        keywords: ['dokumen', 'drive', 'google drive', 'folder', 'tautan', 'link', 'linktree', 'skenario', 'storyboard', 'aset karakter', 'sound', 'voice over', 'final', 'project tracker'],
+        questions: ['Di mana folder Drive proyek?', 'Cara menambah tautan dokumen', 'Kenapa saya tidak melihat dokumen proyek?'],
+        blocks: [
+            { type: 'p', text: 'Bagian **Dokumen** di halaman proyek berisi tautan ke folder dan file proyek, misalnya **Skenario**, **Storyboard**, **Aset karakter**, **Sound**, **Voice over**, **Animasi**, **Final**, dan **Project tracker**. Klik tautannya untuk membuka Drive di tab baru, atau tombol salin untuk mengirimnya ke chat.' },
+            {
+                type: 'list',
+                items: [
+                    'Hanya orang yang terlibat di proyek yang melihat tautannya: anggota proyek, lead sub proyek, dan pengerja tugas di proyek itu. Team Lead, PM, PD, dan Superadmin melihat semuanya.',
+                    'File tetap di Google Drive. Kalau Drive meminta **Minta akses**, hubungi pemilik folder: izin buka file diatur di Drive, bukan di aplikasi ini.',
+                    'Tautan bertanda **Hanya pengelola** tidak terlihat oleh anggota biasa.',
+                ],
+            },
+            {
+                type: 'steps',
+                items: [
+                    'Team Lead, PM, PD, atau Superadmin membuka halaman proyek, lalu **Tambah tautan**.',
+                    'Pilih jenisnya. Untuk yang tidak ada di daftar, pilih **Lainnya** dan isi namanya.',
+                    'Di Google Drive, klik **Bagikan**, lalu **Salin link**, dan tempel di **Alamat tautan**. Alamat harus diawali https://.',
+                    'Urutan diatur dengan **Atur urutan**, lalu tombol naik dan turun di tiap tautan.',
+                ],
+            },
         ],
     },
     // Management
@@ -695,7 +782,7 @@ export const articles: Article[] = [
                 type: 'table',
                 head: ['Angka', 'Cara menghitung'],
                 rows: [
-                    ['Kapasitas', 'Hari kerja minggu itu menurut Kalender, dikurangi hari cuti yang disetujui, dikali 8 jam'],
+                    ['Kapasitas', 'Target kerja mingguan orang itu, sudah dikurangi libur dan cuti yang disetujui (lihat Target kerja mingguan). Freelance: hari kerja minggu itu dikurangi cuti, dikali 8 jam'],
                     ['Rencana', 'Bagiannya dari sisa estimasi tugas yang bagiannya belum dikirim atau perlu revisi, dengan tenggat sampai akhir minggu itu (termasuk yang sudah lewat). Sisa = estimasi dikurangi semua menit timer di tugas itu, lalu dibagi rata ke semua pengerja. Contoh: tugas 10 jam dengan 2 pengerja masuk 5 jam ke rencana masing-masing'],
                     ['Tanpa estimasi', 'Tugas di kelompok yang sama yang belum punya estimasi. Isi estimasinya supaya rencana akurat'],
                     ['Log kerja dan jam reguler', 'Jam yang tercatat di Log kerja dan jam reguler absen minggu itu'],
@@ -838,7 +925,7 @@ export const articles: Article[] = [
         title: 'Aturan absen',
         summary: 'Angka yang dipakai mesin absen: batas jam reguler, pengingat, terputus, dan absen web.',
         audience: ['settings.manage'],
-        keywords: ['aturan', 'setelan', 'settings', 'batas jam', '480 menit', 'absen web', 'matikan absen web'],
+        keywords: ['aturan', 'setelan', 'settings', 'batas jam', '480 menit', 'absen web', 'matikan absen web', 'target', '40 jam', 'magang'],
         questions: ['Mengubah batas 8 jam', 'Mematikan absen dari web'],
         blocks: [
             {
@@ -855,9 +942,13 @@ export const articles: Article[] = [
                     ['Batas melanjutkan shift terputus', '90 menit'],
                     ['Boleh masuk tanpa internet selama', '14 hari'],
                     ['Absen dari web', 'Nyala'],
+                    ['Target karyawan tetap dan kontrak', '40 jam per minggu'],
+                    ['Kehadiran magang per minggu', '2 hari'],
+                    ['Jam kerja magang per hari', '480 menit'],
                 ],
             },
             { type: 'p', text: 'Batas jam reguler hanya berlaku untuk shift baru. Ubah hanya atas keputusan owner. Setiap perubahan masuk Log audit.' },
+            { type: 'p', text: 'Target magang bisa diganti per orang di form **Orang**, bagian **Target magang**, yang muncul saat jenis karyawan Magang dipilih. Kosongkan untuk memakai bawaan.' },
         ],
     },
     {
@@ -1171,6 +1262,7 @@ export const terms: Term[] = [
     { term: 'Bagian tugas', definition: 'Kerja satu pengerja di sebuah tugas: timer, bukti, dan review sendiri. Statusnya Belum kirim, Menunggu review, Perlu revisi, atau Disetujui.', article: 'timer-bukti' },
     { term: 'Bukti', definition: 'Tautan atau file hasil kerja yang dikirim untuk review tugas. Setiap pengerja mengirim buktinya sendiri. Wajib kecuali lead mematikannya.', article: 'timer-bukti' },
     { term: 'Cuti', definition: 'Hari kerja yang tidak dipakai bekerja, dengan pengajuan dan persetujuan. Cuti tahunan paling banyak 12 hari kerja per tahun; sisa kuotanya dicatat Superadmin.', article: 'ajukan-cuti' },
+    { term: 'Dokumen proyek', definition: 'Tautan folder dan file Google Drive di halaman proyek, hanya untuk orang yang terlibat di proyek itu.', article: 'dokumen-proyek' },
     { term: 'Hari bukan hari kerja', definition: 'Akhir pekan, hari libur, atau libur studio. Semua jam di hari itu dihitung lembur, kecuali tanggalnya dibuka sebagai hari kerja.', article: 'bukan-hari-kerja' },
     { term: 'Jam PC berbeda', definition: 'Tanda saat jam Windows di PC berbeda lebih dari 2 menit dari server. Jam server yang dipakai.', article: 'persetujuan' },
     { term: 'Jam reguler', definition: 'Jam kerja sampai batas 8 jam per tanggal kerja, tanpa potongan istirahat. Beberapa shift di tanggal yang sama dijumlah.', article: 'pengingat-8-jam' },
@@ -1198,6 +1290,7 @@ export const terms: Term[] = [
     { term: 'Tahap', definition: 'Bagian pipeline produksi tempat sebuah tugas berada, misalnya Storyboard atau Compositing.', article: 'tahap-milestone' },
     { term: 'Tanda 8 jam', definition: 'Saat jam reguler tanggal itu mencapai batas. Lembur dihitung mulai dari sini.', article: 'pengingat-8-jam' },
     { term: 'Tanda aktif', definition: 'Sinyal tiap menit dari tab Hari ini atau aplikasi desktop yang membuktikan shift masih berjalan.', article: 'terputus' },
+    { term: 'Target kerja mingguan', definition: 'Jam reguler yang diharapkan per minggu: tetap dan kontrak 40 jam, magang hari hadir × jam per hari, freelance tanpa target. Hanya ditampilkan, tidak memotong jam.', article: 'target-mingguan' },
     { term: 'Terputus', definition: 'Status shift setelah 4 menit tanpa tanda aktif. Lanjutkan dalam 90 menit supaya shift tidak ditutup.', article: 'terputus' },
     { term: 'Usulan tugas', definition: 'Tugas yang dibuat anggota proyek dan menunggu keputusan lead.', article: 'usul-tugas' },
 ];

@@ -5,6 +5,7 @@ namespace App\Modules\Projects\Services;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
 use App\Modules\Projects\Models\PipelineStage;
+use App\Modules\Projects\Models\ProjectLink;
 use App\Modules\Projects\Models\ProjectMember;
 use App\Modules\Projects\Models\ProjectMilestone;
 use App\Modules\Projects\Models\SubProject;
@@ -141,6 +142,21 @@ class TaskPresenter
             'note' => $milestone->note,
             'status' => $milestone->statusOn($today)->value,
             'days_until' => $milestone->daysUntil($today),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function link(ProjectLink $link): array
+    {
+        return [
+            'id' => $link->id,
+            'category' => $link->category->value,
+            'label' => $link->label,
+            'url' => $link->url,
+            'note' => $link->note,
+            'managers_only' => $link->managers_only,
+            'service' => $link->service(),
+            'host' => $link->host(),
         ];
     }
 

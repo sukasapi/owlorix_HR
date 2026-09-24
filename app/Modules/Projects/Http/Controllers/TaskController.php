@@ -144,6 +144,8 @@ class TaskController extends Controller
                 'description' => $data['description'] ?? null,
                 'status' => $direct ? TaskStatus::Todo : TaskStatus::Proposed,
                 'priority' => $data['priority'],
+                // New tasks go to the end of the list; the lead moves them from there
+                'position' => (int) Task::query()->where('sub_project_id', $subProject->id)->lockForUpdate()->max('position') + 1,
                 'created_by' => $user->id,
                 'due_date' => $data['due_date'] ?? null,
                 'estimate_minutes' => $this->minutes($data['estimate_hours'] ?? null),
@@ -222,6 +224,57 @@ class TaskController extends Controller
         });
 
         return redirect()->route('projects.sub.show', $place)->with('status', __('projects::messages.task_deleted'));
+    }
+
+    /**
+     * Puts the task at `index` among the tasks with its status, the group the sub project list shows it in. The order
+     * is one sequence for the whole sub project, so a task keeps its place when its status changes. Positions are
+     * renumbered 1..n on the way, like document links.
+     */
+    public function move(Request $request, Task $task, Auditor $auditor): RedirectResponse
+    {
+        Gate::authorize('reorder', $task);
+
+        $index = (int) $request->validate(['index' => ['required', 'integer', 'min:0', 'max:10000']])['index'];
+
+        DB::transaction(function () use ($task, $index, $auditor) {
+            $rows = Task::query()->where('sub_project_id', $task->sub_project_id)->lockForUpdate()
+                ->orderBy('position')->orderBy('id')->get(['id', 'status', 'position']);
+            $moved = $rows->firstWhere('id', $task->id);
+
+            if ($moved === null) {
+                return;
+            }
+
+            $group = $rows->filter(fn (Task $row) => $row->status === $moved->status)->pluck('id')->values()->all();
+            $from = array_search($task->id, $group, true);
+            $others = array_values(array_diff($group, [$task->id]));
+            $to = min($index, count($others));
+
+            if ($from === $to) {
+                return;
+            }
+
+            // Before the task that will follow it in the group, or right after the last one when it goes to the end
+            $order = array_values(array_diff($rows->pluck('id')->all(), [$task->id]));
+            $at = $to < count($others)
+                ? array_search($others[$to], $order, true)
+                : array_search($others[count($others) - 1], $order, true) + 1;
+            array_splice($order, $at, 0, [$task->id]);
+
+            $positions = $rows->pluck('position', 'id');
+            foreach ($order as $i => $id) {
+                if ($positions[$id] !== $i + 1) {
+                    Task::query()->whereKey($id)->update(['position' => $i + 1]);
+                }
+            }
+
+            $auditor->record('task.reordered', $task,
+                ['sub_project_id' => $task->sub_project_id, 'status' => $moved->status->value, 'index' => $from],
+                ['sub_project_id' => $task->sub_project_id, 'status' => $moved->status->value, 'index' => $to]);
+        });
+
+        return back();
     }
 
     public function decide(DecideTaskRequest $request, Task $task): RedirectResponse

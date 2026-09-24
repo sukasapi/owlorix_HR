@@ -75,6 +75,16 @@ export default {
         filter_empty: 'No tasks in this stage.',
         filter_reset: 'Show all stages',
     },
+    order: {
+        start: 'Set order',
+        done: 'Done ordering',
+        hint: 'Drag a task by the handle on its left, or use the arrow buttons. The order applies within each status group and the whole team sees it. New tasks go to the bottom.',
+        handle: 'Drag to move',
+        up_label: 'Move :name up',
+        down_label: 'Move :name down',
+        moved: ':name is now :position of :total.',
+        failed: 'The order was not saved. Check the connection to the studio server, then try again.',
+    },
     form: {
         create_title: 'New task',
         propose_title: 'Propose a task',

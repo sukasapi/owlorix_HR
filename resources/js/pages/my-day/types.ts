@@ -1,4 +1,4 @@
-import type { DayVerdict } from '@/types';
+import type { DayVerdict, WeekTargetData } from '@/types';
 
 export type LiveStatus = 'open' | 'prompted' | 'overtime' | 'interrupted';
 export type ShiftStatus = LiveStatus | 'report_due' | 'closed' | 'needs_review';
@@ -105,6 +105,8 @@ export interface Summary {
 export interface MyDayProps {
     summary: Summary;
     day: DayVerdict;
+    /** Null for an employment type without a weekly target (freelance) */
+    week: WeekTargetData | null;
 }
 
 /** Refusals from the web clock come back as a stable code; everything else is a ready message. */

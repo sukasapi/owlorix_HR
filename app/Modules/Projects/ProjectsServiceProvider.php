@@ -4,11 +4,13 @@ namespace App\Modules\Projects;
 
 use App\Modules\Projects\Models\PipelineStage;
 use App\Modules\Projects\Models\Project;
+use App\Modules\Projects\Models\ProjectLink;
 use App\Modules\Projects\Models\ProjectMilestone;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
 use App\Modules\Projects\Models\WorkActivityLog;
 use App\Modules\Projects\Policies\PipelineStagePolicy;
+use App\Modules\Projects\Policies\ProjectLinkPolicy;
 use App\Modules\Projects\Policies\ProjectMilestonePolicy;
 use App\Modules\Projects\Policies\ProjectPolicy;
 use App\Modules\Projects\Policies\SubProjectPolicy;
@@ -29,5 +31,6 @@ class ProjectsServiceProvider extends ServiceProvider
         Gate::policy(Task::class, TaskPolicy::class);
         Gate::policy(ProjectMilestone::class, ProjectMilestonePolicy::class);
         Gate::policy(PipelineStage::class, PipelineStagePolicy::class);
+        Gate::policy(ProjectLink::class, ProjectLinkPolicy::class);
     }
 }

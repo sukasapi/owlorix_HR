@@ -8,6 +8,7 @@ import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { NotePencil, Plus, Trash, X } from '@phosphor-icons/react';
 import { BudgetMeter, budgetHoursValue } from './BudgetMeter';
 import { type Milestone, type MilestoneKind, Milestones } from './Milestones';
+import { type LinkCategory, type ProjectLink, ProjectLinks } from './ProjectLinks';
 import { SubProjectDialog } from './SubProjectDialog';
 import { SubProjectList } from './SubProjectList';
 import type { BudgetData, PersonOption as LeadOption, SubProjectData } from './taskTypes';
@@ -52,6 +53,9 @@ interface PageProps {
     leads: LeadOption[];
     milestones: Milestone[];
     milestone_kinds: MilestoneKind[];
+    /** Null when the viewer is not involved in the project */
+    links: ProjectLink[] | null;
+    link_categories: LinkCategory[];
     can_budget: boolean;
     /** Only for people with projects.budget; absent for everyone else. */
     budget?: BudgetData;
@@ -114,6 +118,8 @@ export default function ProjectShow() {
                     />
                 </div>
             )}
+
+            <ProjectLinks projectId={project.id} items={props.links} categories={props.link_categories} canManage={can_manage} />
 
             <Milestones projectId={project.id} items={props.milestones} kinds={props.milestone_kinds} canManage={can_manage} />
 
