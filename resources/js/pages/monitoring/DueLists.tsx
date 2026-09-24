@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/react';
 import { WarningCircle } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { MilestoneChip } from '../projects/Milestones';
-import { PersonLine, StatusChip } from '../projects/TaskBits';
+import { AssigneeStack, StatusChip } from '../projects/TaskBits';
 import type { WorkMonitorProps } from './types';
 
 const DUE_SOON_DAYS = 7;
@@ -65,7 +65,7 @@ export function DueTasks({ due }: { due: WorkMonitorProps['due'] }) {
                                     )}
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                                         <StatusChip status={task.status} />
-                                        <PersonLine person={task.assignee} fallback={t('work-monitor.due.unassigned')} />
+                                        <AssigneeStack people={task.assignees} fallback={t('work-monitor.due.unassigned')} />
                                     </div>
                                 </div>
                             </li>

@@ -17,7 +17,8 @@ class DecideTaskRequest extends FormRequest
         return [
             'decision' => ['required', Rule::in(['approve', 'reject'])],
             'note' => ['nullable', 'required_if:decision,reject', 'string', 'min:10', 'max:2000'],
-            'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('status', 'active')->whereNull('deleted_at')],
+            // Approving may replace or add assignees; without the field the proposer stays the only one
+            ...TaskRequest::assigneeRules(),
         ];
     }
 
@@ -26,6 +27,7 @@ class DecideTaskRequest extends FormRequest
         return [
             'note.required_if' => __('projects::messages.reject_note_required'),
             'note.min' => __('projects::messages.note_min'),
+            ...TaskRequest::assigneeMessages(),
         ];
     }
 }

@@ -1,5 +1,6 @@
 import { OwlEyes } from '@/components/owl/OwlEyes';
-import { TextAreaField, TextField, SelectField } from '@/components/ui/Field';
+import { Avatar } from '@/components/ui/Avatar';
+import { TextAreaField, TextField } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import AppShell from '@/layouts/AppShell';
 import { formatDateTime, formatMinutes, formatShortDate, formatTime } from '@/lib/format';
@@ -8,11 +9,20 @@ import type { Person, SharedProps } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { Check, DownloadSimple, HandGrabbing, LinkSimple, Pause, PencilSimple, Play, Trash, WarningCircle } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
-import { PersonLine, PriorityMark, StatusChip } from './TaskBits';
+import { AssigneePicker, assigneeError, sameIds } from './AssigneePicker';
+import { PartChip, PersonLine, PriorityMark, StatusChip } from './TaskBits';
 import { TaskDialog } from './TaskDialog';
-import type { PersonOption, RunningTimer, StageOption, SubProjectData, TaskPriority, TaskRow } from './taskTypes';
+import type { Assignee, AssigneeOption, PartStatus, RunningTimer, StageOption, SubProjectData, TaskPriority, TaskRow } from './taskTypes';
+
+/** An assignee on the task page: their part plus their own timer minutes. */
+interface AssigneeDetail extends Assignee {
+    logged_minutes: number;
+    running: boolean;
+}
 
 interface TaskDetail extends TaskRow {
+    assignees: AssigneeDetail[];
+    my_part: PartStatus | null;
     description: string | null;
     decider: Person | null;
     decided_at: string | null;
@@ -42,6 +52,10 @@ interface Submission {
     reviewed_at: string | null;
     submitted_by: Person | null;
     created_at: string | null;
+    /** Pending and still up for review (false once the sender left the task or sent again) */
+    waiting: boolean;
+    /** The viewer may review this one now */
+    can_review: boolean;
 }
 
 interface PageProps {
@@ -51,7 +65,8 @@ interface PageProps {
     running: RunningTimer | null;
     unlogged: { count: number; minutes: number };
     can: { update: boolean; delete: boolean; decide: boolean; claim: boolean; work: boolean; review: boolean; lead: boolean };
-    people: PersonOption[];
+    people: AssigneeOption[];
+    max_assignees: number;
     priorities: TaskPriority[];
     stages: StageOption[];
     limits: { file_max_kb: number; file_types: string };
@@ -110,6 +125,7 @@ export default function TaskShow() {
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
                 <div className="flex min-w-0 flex-col gap-7">
                     <ActionPanel />
+                    <Assignees />
                     <section aria-labelledby="task-details">
                         <h2 id="task-details" className="h2 text-[20px]">
                             {t('tasks.detail.description')}
@@ -132,12 +148,13 @@ export default function TaskShow() {
                         description: task.description,
                         priority: task.priority,
                         stage_id: task.stage?.id ?? null,
-                        assignee_id: task.assignee?.id ?? null,
+                        assignee_ids: task.assignees.map((a) => a.id),
                         due_date: task.due_date,
                         estimate_minutes: task.estimate_minutes,
                         evidence_required: task.evidence_required,
                     }}
                     people={props.people}
+                    maxAssignees={props.max_assignees}
                     priorities={props.priorities}
                     stages={props.stages}
                     onClose={() => setEditing(false)}
@@ -147,40 +164,82 @@ export default function TaskShow() {
     );
 }
 
-/** The one thing to do on this task right now, for this viewer. It is the focal point of the page. */
+/**
+ * What this viewer can do on the task right now: the focal point of the page. A lead who is also an assignee sees
+ * the review cards and their own timer, one under the other.
+ */
 function ActionPanel() {
     const { props } = usePage<SharedProps & PageProps>();
     const t = useT();
     const locale = useLocale();
     const { task, can } = props;
+    const toReview = props.submissions.filter((s) => s.can_review);
+    const notSent = task.assignees.filter((a) => a.part_status === 'open');
+    // A lead who is also an assignee handles their own part in the work form below, so the waiting lines name others
+    const me = props.auth?.user.id;
+    const othersNotSent = notSent.filter((a) => a.id !== me);
+    const othersRevising = task.assignees.filter((a) => a.id !== me && a.part_status === 'changes_requested');
 
-    let body: ReactNode;
-    let eyes: 'open' | 'closed' | 'attention' | 'half' = 'open';
+    let eyes: 'open' | 'closed' | 'attention' | 'half' = 'half';
+    const blocks: { key: string; node: ReactNode }[] = [];
 
     if (task.status === 'proposed') {
         eyes = can.decide ? 'attention' : 'half';
-        body = can.decide ? <DecideForm /> : <p className="m-0">{t('tasks.decide.waiting_lead')}</p>;
+        blocks.push({ key: 'decide', node: can.decide ? <DecideForm /> : <p className="m-0">{t('tasks.decide.waiting_lead')}</p> });
     } else if (task.status === 'rejected') {
         eyes = 'closed';
-        body = (
-            <>
-                <p className="m-0 font-semibold">{t('tasks.decide.rejected_heading')}</p>
-                {task.decision_note && <p className="m-0 mt-1 whitespace-pre-line">{task.decision_note}</p>}
-            </>
-        );
-    } else if (task.status === 'done') {
-        eyes = 'closed';
-        body = <p className="m-0 font-semibold">{t('tasks.work.done', { date: task.completed_at ? formatDateTime(task.completed_at, locale) : '' })}</p>;
-    } else if (task.status === 'in_review') {
-        eyes = can.review ? 'attention' : 'half';
-        body = can.review ? <ReviewForm /> : <p className="m-0">{t('tasks.work.in_review')}</p>;
-    } else if (can.claim) {
-        body = <ClaimAction />;
-    } else if (can.work) {
-        body = <WorkPanel />;
+        blocks.push({
+            key: 'rejected',
+            node: (
+                <>
+                    <p className="m-0 font-semibold">{t('tasks.decide.rejected_heading')}</p>
+                    {task.decision_note && <p className="m-0 mt-1 whitespace-pre-line">{task.decision_note}</p>}
+                </>
+            ),
+        });
     } else {
-        eyes = 'half';
-        body = <p className="m-0">{t('tasks.work.not_yours')}</p>;
+        if (task.status === 'done') {
+            eyes = 'closed';
+            blocks.push({ key: 'done', node: <p className="m-0 font-semibold">{t('tasks.work.done', { date: task.completed_at ? formatDateTime(task.completed_at, locale) : '' })}</p> });
+        }
+        if (toReview.length > 0) {
+            eyes = 'attention';
+            blocks.push({ key: 'review', node: <ReviewQueue items={toReview} /> });
+        }
+        if (can.lead && othersNotSent.length > 0) {
+            blocks.push({
+                key: 'waiting',
+                node: <p className="m-0">{t('tasks.work.waiting_others', { count: othersNotSent.length, names: othersNotSent.map((a) => a.name).join(', ') })}</p>,
+            });
+        }
+        if (can.lead && othersRevising.length > 0) {
+            blocks.push({
+                key: 'revising',
+                node: <p className="m-0">{t('tasks.work.waiting_changes', { names: othersRevising.map((a) => a.name).join(', ') })}</p>,
+            });
+        }
+        if (can.claim) {
+            eyes = toReview.length > 0 ? eyes : 'open';
+            blocks.push({ key: 'claim', node: <ClaimAction /> });
+        }
+        if (can.work) {
+            eyes = toReview.length > 0 ? eyes : 'open';
+            blocks.push({ key: 'work', node: <WorkPanel /> });
+        } else if (task.my_part === 'submitted') {
+            blocks.push({ key: 'sent', node: <p className="m-0">{notSent.length > 0 ? t('tasks.work.my_part_sent_waiting', { count: notSent.length }) : t('tasks.work.my_part_sent')}</p> });
+        } else if (task.my_part === 'approved' && task.status !== 'done') {
+            blocks.push({ key: 'approved', node: <p className="m-0">{t('tasks.work.my_part_approved')}</p> });
+        }
+        if (blocks.length === 0) {
+            const text = can.lead
+                ? task.assignees.length === 0
+                    ? t('tasks.detail.people_empty_lead')
+                    : t('tasks.work.in_review')
+                : task.status === 'in_review'
+                  ? t('tasks.work.in_review')
+                  : t('tasks.work.not_yours');
+            blocks.push({ key: 'none', node: <p className="m-0">{text}</p> });
+        }
     }
 
     return (
@@ -189,7 +248,13 @@ function ActionPanel() {
                 <span className="hidden flex-none sm:inline-block">
                     <OwlEyes state={eyes} size={56} />
                 </span>
-                <div className="min-w-0 flex-1">{body}</div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                    {blocks.map((block, i) => (
+                        <div key={block.key} className={i > 0 ? 'mt-5 border-t border-[color-mix(in_srgb,var(--eye-brow)_25%,transparent)] pt-5' : ''}>
+                            {block.node}
+                        </div>
+                    ))}
+                </div>
             </div>
         </section>
     );
@@ -200,11 +265,17 @@ function DecideForm() {
     const t = useT();
     const locale = useLocale();
     const { task } = props;
-    const form = useForm({ decision: 'approve' as 'approve' | 'reject', note: '', assignee_id: task.assignee ? String(task.assignee.id) : '' });
+    const initial = task.assignees.map((a) => a.id);
+    const form = useForm({ decision: 'approve' as 'approve' | 'reject', note: '', assignee_ids: initial });
 
     const send = (decision: 'approve' | 'reject') => (event?: FormEvent) => {
         event?.preventDefault();
-        form.transform((data) => ({ ...data, decision, note: data.note.trim() || null, assignee_id: data.assignee_id === '' ? null : Number(data.assignee_id) }));
+        form.transform(({ assignee_ids, ...data }) => ({
+            ...data,
+            decision,
+            note: data.note.trim() || null,
+            ...(sameIds(assignee_ids, initial) ? {} : { assignee_ids }),
+        }));
         form.post(route('tasks.decide', task.id), visit);
     };
 
@@ -214,14 +285,16 @@ function DecideForm() {
                 <h2 className="h2 text-[22px]">{t('tasks.decide.heading')}</h2>
                 {task.creator && task.created_at && <p className="m-0 mt-1 text-sm">{t('tasks.detail.proposed_by', { name: task.creator.name, date: formatDateTime(task.created_at, locale) })}</p>}
             </div>
-            <SelectField label={t('tasks.decide.assignee')} value={form.data.assignee_id} onChange={(e) => form.setData('assignee_id', e.target.value)} error={form.errors.assignee_id} className="max-w-[420px]">
-                <option value="">{t('tasks.form.assignee_none')}</option>
-                {props.people.map((person) => (
-                    <option key={person.id} value={person.id}>
-                        {person.name} ({person.username})
-                    </option>
-                ))}
-            </SelectField>
+            <div className="max-w-[520px] rounded-[var(--radius-md)] bg-surface px-4 py-4">
+                <AssigneePicker
+                    people={props.people}
+                    value={form.data.assignee_ids}
+                    onChange={(ids) => form.setData('assignee_ids', ids)}
+                    max={props.max_assignees}
+                    help={t('tasks.decide.assignees_help')}
+                    error={assigneeError(form.errors as Record<string, string | undefined>)}
+                />
+            </div>
             <TextAreaField label={t('tasks.decide.note')} help={t('tasks.decide.note_help')} rows={3} maxLength={2000} value={form.data.note} onChange={(e) => form.setData('note', e.target.value)} error={form.errors.note} />
             <div className="flex flex-col gap-2 sm:flex-row">
                 <button type="submit" className="btn btn-primary" disabled={form.processing}>
@@ -252,7 +325,7 @@ function ClaimAction() {
     );
 }
 
-/** Timer and evidence for the assignee. The running time updates every minute; seconds would only add noise. */
+/** Timer and evidence for the viewer's own part. The running time updates every minute; seconds would only add noise. */
 function WorkPanel() {
     const { props } = usePage<SharedProps & PageProps>();
     const t = useT();
@@ -278,7 +351,8 @@ function WorkPanel() {
 
     return (
         <div className="flex flex-col gap-4">
-            {task.status === 'changes_requested' && <LatestReviewNote />}
+            {task.assignees.length > 1 && <p className="m-0 text-sm font-semibold">{t('tasks.work.shared_hint', { count: task.assignees.length })}</p>}
+            {task.my_part === 'changes_requested' && <LatestReviewNote />}
             {here && running ? (
                 <div className="flex flex-col gap-3">
                     <p className="display num m-0 text-[40px] text-heading" aria-live="polite">
@@ -313,10 +387,12 @@ function WorkPanel() {
     );
 }
 
+/** The lead's note on the viewer's latest evidence that came back for changes. */
 function LatestReviewNote() {
     const { props } = usePage<SharedProps & PageProps>();
     const t = useT();
-    const latest = props.submissions.find((s) => s.review_status === 'changes_requested');
+    const me = props.auth?.user.id;
+    const latest = props.submissions.find((s) => s.submitted_by?.id === me && s.review_status === 'changes_requested');
     if (!latest?.review_note) return null;
 
     return (
@@ -407,32 +483,62 @@ function SubmitForm({ onCancel }: { onCancel: () => void }) {
     );
 }
 
-function ReviewForm() {
+/** One card per submission the viewer can review. The server sends newest first; the one waiting longest goes on top. */
+function ReviewQueue({ items }: { items: Submission[] }) {
+    const t = useT();
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div>
+                <h2 className="h2 text-[22px]">{t('tasks.review.heading')}</h2>
+                <p className="m-0 mt-1 text-sm">{t('tasks.review.lead')}</p>
+            </div>
+            <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {[...items].reverse().map((submission) => (
+                    <li key={submission.id}>
+                        <ReviewCard submission={submission} />
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function ReviewCard({ submission }: { submission: Submission }) {
     const { props } = usePage<SharedProps & PageProps>();
     const t = useT();
+    const locale = useLocale();
+    const headingId = useId();
     const form = useForm({ decision: 'approve' as 'approve' | 'changes', note: '' });
+    // Approving the last part that is not approved yet finishes the task, so the button says so
+    const finishes = props.task.assignees.filter((a) => a.id !== submission.submitted_by?.id).every((a) => a.part_status === 'approved');
 
     const send = (decision: 'approve' | 'changes') => (event?: FormEvent) => {
         event?.preventDefault();
-        form.transform((data) => ({ ...data, decision, note: data.note.trim() || null }));
+        form.transform((data) => ({ ...data, decision, submission_id: submission.id, note: data.note.trim() || null }));
         form.post(route('tasks.review', props.task.id), visit);
     };
 
     return (
-        <form onSubmit={send('approve')} className="flex flex-col gap-4">
-            <h2 className="h2 text-[22px]">{t('tasks.review.heading')}</h2>
-            {props.submissions[0] && <SubmissionBody submission={props.submissions[0]} />}
-            <TextAreaField label={t('tasks.review.note')} help={t('tasks.review.note_help')} rows={3} maxLength={2000} value={form.data.note} onChange={(e) => form.setData('note', e.target.value)} error={form.errors.note} />
-            <div className="flex flex-col gap-2 sm:flex-row">
-                <button type="submit" className="btn btn-primary" disabled={form.processing}>
-                    <Check weight="bold" size={18} aria-hidden />
-                    {t('tasks.review.approve')}
-                </button>
-                <button type="button" className="btn btn-danger" disabled={form.processing} onClick={() => send('changes')()}>
-                    {t('tasks.review.changes')}
-                </button>
-            </div>
-        </form>
+        <article className="card flex flex-col gap-3 px-4 py-4" aria-labelledby={headingId}>
+            <h3 id={headingId} className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-base font-semibold">
+                <PersonLine person={submission.submitted_by} fallback="" />
+                <span className="num text-sm font-normal text-muted">{submission.created_at ? formatDateTime(submission.created_at, locale) : ''}</span>
+            </h3>
+            <SubmissionBody submission={submission} />
+            <form onSubmit={send('approve')} className="flex flex-col gap-3">
+                <TextAreaField label={t('tasks.review.note')} help={t('tasks.review.note_help')} rows={3} maxLength={2000} value={form.data.note} onChange={(e) => form.setData('note', e.target.value)} error={form.errors.note} />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <button type="submit" className="btn btn-primary" disabled={form.processing}>
+                        <Check weight="bold" size={18} aria-hidden />
+                        {finishes ? t('tasks.review.approve_last') : t('tasks.review.approve')}
+                    </button>
+                    <button type="button" className="btn btn-danger" disabled={form.processing} onClick={() => send('changes')()}>
+                        {t('tasks.review.changes')}
+                    </button>
+                </div>
+            </form>
+        </article>
     );
 }
 
@@ -460,6 +566,55 @@ function SubmissionBody({ submission }: { submission: Submission }) {
     );
 }
 
+/** Pengerja: everyone on the task, the state of their part, and their own timer time (docs/15 section 4). */
+function Assignees() {
+    const { props } = usePage<SharedProps & PageProps>();
+    const t = useT();
+    const locale = useLocale();
+    const headingId = useId();
+    const { task, can } = props;
+    const me = props.auth?.user.id;
+    const showParts = task.status !== 'proposed' && task.status !== 'rejected';
+
+    return (
+        <section aria-labelledby={headingId}>
+            <h2 id={headingId} className="h2 flex items-baseline gap-2 text-[20px]">
+                {t('tasks.detail.people_heading')}
+                {task.assignees.length > 0 && <span className="num text-base font-normal text-muted">({task.assignees.length})</span>}
+            </h2>
+            {task.assignees.length === 0 ? (
+                <p className="m-0 mt-2 text-muted">{can.lead ? t('tasks.detail.people_empty_lead') : t('tasks.detail.people_empty')}</p>
+            ) : (
+                <ul className="card m-0 mt-3 list-none divide-y divide-line p-0">
+                    {task.assignees.map((person) => (
+                        <li key={person.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+                            <span className="inline-flex min-w-0 items-center gap-2.5">
+                                <Avatar initials={person.initials} photoUrl={person.photo_url} className="h-8 w-8 text-[12px]" />
+                                <span className="min-w-0">
+                                    <span className="block truncate font-semibold" title={person.full_name}>
+                                        {person.name}
+                                        {person.id === me && <span className="font-normal text-muted"> {t('tasks.detail.people_you')}</span>}
+                                    </span>
+                                    <span className="num block text-sm text-muted">
+                                        {person.logged_minutes > 0 ? t('tasks.detail.people_logged', { time: formatMinutes(person.logged_minutes, locale) }) : t('tasks.detail.people_no_time')}
+                                        {person.running && (
+                                            <span className="font-semibold text-ink">
+                                                {' · '}
+                                                {t('tasks.detail.people_running')}
+                                            </span>
+                                        )}
+                                    </span>
+                                </span>
+                            </span>
+                            {showParts && <PartChip status={person.part_status} />}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
+    );
+}
+
 function Submissions() {
     const { props } = usePage<SharedProps & PageProps>();
     const t = useT();
@@ -477,23 +632,27 @@ function Submissions() {
                 <p className="m-0 mt-2 text-muted">{t('tasks.history.submissions_empty')}</p>
             ) : (
                 <ol className="card m-0 mt-3 list-none divide-y divide-line p-0">
-                    {props.submissions.map((s) => (
-                        <li key={s.id} className="flex flex-col gap-3 px-4 py-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="num m-0 text-sm text-muted">{t('tasks.history.sent_by', { name: s.submitted_by?.name ?? '', date: s.created_at ? formatDateTime(s.created_at, locale) : '' })}</p>
-                                <span className={`chip ${chip[s.review_status]}`}>{reviewLabel[s.review_status]}</span>
-                            </div>
-                            <SubmissionBody submission={s} />
-                            {s.reviewed_at && (
-                                <div className="border-l-2 border-line-strong pl-3 text-sm">
-                                    <p className="num m-0 text-muted">
-                                        {t('tasks.history.reviewed_by', { status: reviewLabel[s.review_status], name: s.reviewer?.name ?? '', date: formatDateTime(s.reviewed_at, locale) })}
-                                    </p>
-                                    {s.review_note && <p className="m-0 mt-1 whitespace-pre-line break-words">{s.review_note}</p>}
+                    {props.submissions.map((s) => {
+                        const stale = s.review_status === 'pending' && !s.waiting;
+                        return (
+                            <li key={s.id} className="flex flex-col gap-3 px-4 py-4">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="num m-0 text-sm text-muted">{t('tasks.history.sent_by', { name: s.submitted_by?.name ?? '', date: s.created_at ? formatDateTime(s.created_at, locale) : '' })}</p>
+                                    <span className={`chip ${stale ? '' : chip[s.review_status]}`}>{stale ? t('tasks.history.stale') : reviewLabel[s.review_status]}</span>
                                 </div>
-                            )}
-                        </li>
-                    ))}
+                                <SubmissionBody submission={s} />
+                                {stale && <p className="m-0 text-sm text-muted">{t('tasks.history.stale_note')}</p>}
+                                {s.reviewed_at && (
+                                    <div className="border-l-2 border-line-strong pl-3 text-sm">
+                                        <p className="num m-0 text-muted">
+                                            {t('tasks.history.reviewed_by', { status: reviewLabel[s.review_status], name: s.reviewer?.name ?? '', date: formatDateTime(s.reviewed_at, locale) })}
+                                        </p>
+                                        {s.review_note && <p className="m-0 mt-1 whitespace-pre-line break-words">{s.review_note}</p>}
+                                    </div>
+                                )}
+                            </li>
+                        );
+                    })}
                 </ol>
             )}
         </section>
@@ -542,7 +701,6 @@ function Facts() {
     const { task } = props;
     const none = <span className="text-muted">{t('tasks.detail.none')}</span>;
     const rows: [string, ReactNode][] = [
-        [t('tasks.detail.assignee'), <PersonLine key="a" person={task.assignee} fallback={t('tasks.detail.no_assignee')} />],
         [t('tasks.detail.priority'), t(`tasks.priority.${task.priority}`)],
         [
             t('tasks.detail.stage'),

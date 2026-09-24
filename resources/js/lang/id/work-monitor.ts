@@ -1,7 +1,7 @@
 export default {
     title: 'Monitor kerja',
     lead_studio: 'Tugas, review, dan jam kerja seluruh studio.',
-    lead_scope: 'Tugas anggota tim yang kamu pimpin dan semua tugas di sub proyek yang kamu pimpin.',
+    lead_scope: 'Tugas yang salah satu pengerjanya anggota tim yang kamu pimpin, dan semua tugas di sub proyek yang kamu pimpin.',
     not_counted: 'Usulan yang belum diputuskan dan usulan yang ditolak tidak dihitung di halaman ini.',
     filters: {
         label: 'Saring monitor kerja',

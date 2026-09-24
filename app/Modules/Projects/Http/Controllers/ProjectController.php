@@ -251,22 +251,25 @@ class ProjectController extends Controller
         Gate::authorize('viewAny', Project::class);
 
         $user = $request->user();
-        $withPlace = ['project', 'subProject', 'stage', 'assignee', 'creator'];
+        $withPlace = ['project', 'subProject', 'stage', 'assignees', 'creator'];
 
+        // Every open task the person is on, shared ones included; their own part decides the order (docs/15)
         $myTasks = Task::query()
+            ->select('tasks.*')
+            ->join('task_assignees as mine', fn ($j) => $j->on('mine.task_id', '=', 'tasks.id')->where('mine.user_id', '=', $user->id))
             ->withLoggedMinutes()
             ->with($withPlace)
-            ->where('assignee_id', $user->id)
-            ->whereIn('status', [TaskStatus::ChangesRequested, TaskStatus::InProgress, TaskStatus::Todo, TaskStatus::InReview])
-            ->orderByRaw("FIELD(status, 'changes_requested', 'in_progress', 'todo', 'in_review')")
-            ->orderByRaw('due_date is null, due_date')
+            ->whereIn('tasks.status', [TaskStatus::ChangesRequested, TaskStatus::InProgress, TaskStatus::Todo, TaskStatus::InReview])
+            ->orderByRaw("FIELD(mine.part_status, 'changes_requested', 'open', 'submitted', 'approved')")
+            ->orderByRaw("FIELD(tasks.status, 'changes_requested', 'in_progress', 'todo', 'in_review')")
+            ->orderByRaw('tasks.due_date is null, tasks.due_date')
             ->limit(100)
             ->get()
-            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t))
+            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t, $user))
             ->values();
 
         $waiting = ($inbox->waitingQuery($user)?->with($withPlace)->withLoggedMinutes()->orderBy('updated_at')->limit(100)->get() ?? collect())
-            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t))
+            ->map(fn (Task $t) => TaskPresenter::rowWithPlace($t, $user))
             ->values();
 
         $proposals = Task::query()

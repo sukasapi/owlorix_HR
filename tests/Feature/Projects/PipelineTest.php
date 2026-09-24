@@ -7,6 +7,7 @@ use App\Modules\Projects\Models\PipelineStage;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\ProjectMember;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Models\TaskAssignee;
 use App\Modules\Shared\Audit\AuditLog;
 
 // docs/14 section 3.1: pipeline stages managed by PD and Superadmin, picked on tasks.
@@ -212,9 +213,10 @@ describe('stages on tasks', function () {
     it('shows the stage on the sub project page, the task page, and Tugas saya', function () {
         $stage = stageNamed('Animasi');
         $task = Task::query()->create([
-            'project_id' => $this->project->id, 'sub_project_id' => $this->sub->id, 'stage_id' => $stage->id, 'assignee_id' => $this->member->id,
+            'project_id' => $this->project->id, 'sub_project_id' => $this->sub->id, 'stage_id' => $stage->id,
             'title' => 'Blocking shot 010', 'status' => TaskStatus::Todo, 'priority' => 'normal', 'created_by' => $this->lead->id,
         ]);
+        TaskAssignee::query()->create(['task_id' => $task->id, 'user_id' => $this->member->id, 'part_status' => 'open', 'assigned_at' => now()]);
         $expected = ['id' => $stage->id, 'name' => 'Animasi', 'phase' => 'production', 'is_active' => true];
 
         $this->actingAs($this->member)->get(route('projects.sub.show', [$this->project, $this->sub]))

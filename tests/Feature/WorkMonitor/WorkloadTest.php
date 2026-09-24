@@ -81,6 +81,43 @@ it('plans the remaining estimate of open tasks due this week or overdue', functi
     expect(workloadRow(workloadProps($this->viewer), $person))->toMatchArray(['planned_minutes' => 360, 'planned_tasks' => 3, 'without_estimate' => 0]);
 });
 
+it('splits what is left of a shared estimate evenly among its assignees', function () {
+    $rani = userWithRole(Role::Employee);
+    $bayu = userWithRole(Role::Employee);
+    $sub = W::sub(W::project('Film Pendek'), 'Episode 1');
+
+    W::task($sub, [$rani, $bayu], TaskStatus::Todo, ['due_date' => '2026-09-25', 'estimate_minutes' => 600]);
+
+    $props = workloadProps($this->viewer);
+    expect(workloadRow($props, $rani)['planned_minutes'])->toBe(300)
+        ->and(workloadRow($props, $bayu)['planned_minutes'])->toBe(300);
+
+    // Timer minutes of anyone on the task come off before the split: (600 - 120) / 2
+    $started = W::task($sub, [$rani, $bayu], TaskStatus::InProgress, ['due_date' => '2026-09-25', 'estimate_minutes' => 600]);
+    W::session($started, $rani, 90);
+    W::session($started, $bayu, 30);
+
+    $props = workloadProps($this->viewer);
+    expect(workloadRow($props, $rani))->toMatchArray(['planned_minutes' => 540, 'planned_tasks' => 2])
+        ->and(workloadRow($props, $bayu))->toMatchArray(['planned_minutes' => 540, 'planned_tasks' => 2]);
+});
+
+it('plans a shared task only for people whose own part is still to do', function () {
+    $rani = userWithRole(Role::Employee);
+    $bayu = userWithRole(Role::Employee);
+    $sub = W::sub(W::project('Film Pendek'), 'Episode 1');
+
+    $task = W::task($sub, [$rani, $bayu], TaskStatus::InProgress, ['due_date' => '2026-09-25', 'estimate_minutes' => 600]);
+    $task->parts()->where('user_id', $bayu->id)->update(['part_status' => 'submitted']);
+    W::task($sub, [$rani, $bayu], TaskStatus::ChangesRequested, ['due_date' => '2026-09-25']);
+
+    $props = workloadProps($this->viewer);
+
+    // Bayu sent his part: it waits for the lead. Rani keeps her half; the other task has no estimate
+    expect(workloadRow($props, $rani))->toMatchArray(['planned_minutes' => 300, 'planned_tasks' => 2, 'without_estimate' => 1])
+        ->and(workloadRow($props, $bayu))->toMatchArray(['planned_minutes' => 0, 'planned_tasks' => 1, 'without_estimate' => 1]);
+});
+
 it('counts open tasks without an estimate separately', function () {
     $person = userWithRole(Role::Employee);
     $sub = W::sub(W::project('Film Pendek'), 'Episode 1');

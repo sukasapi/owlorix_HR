@@ -21,8 +21,10 @@ use Illuminate\Support\Collection;
  */
 class AuditLogEntries
 {
-    /** Payload keys holding a person id or a list of team ids, resolved to names for the diff */
+    /** Payload keys holding a person id, a list of person ids, or a list of team ids, resolved to names for the diff */
     private const PERSON_KEYS = ['user_id', 'person_id', 'lead_user_id', 'opened_by', 'proposed_by', 'approved_by', 'decided_by'];
+
+    private const PERSON_LIST_KEYS = ['assignee_ids', 'assignees_added', 'assignees_removed'];
 
     private const TEAM_KEYS = ['team_id', 'team_ids'];
 
@@ -145,6 +147,14 @@ class AuditLogEntries
                 foreach (self::PERSON_KEYS as $key) {
                     if (is_int($payload[$key] ?? null)) {
                         $people[] = $payload[$key];
+                    }
+                }
+
+                foreach (self::PERSON_LIST_KEYS as $key) {
+                    foreach ((array) ($payload[$key] ?? []) as $id) {
+                        if (is_int($id)) {
+                            $people[] = $id;
+                        }
                     }
                 }
 

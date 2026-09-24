@@ -19,8 +19,8 @@ export default {
         heading: 'How to read this',
         capacity: "Capacity: the person's workdays in the chosen week from the Calendar, minus approved leave days, times :limit.",
         planned:
-            'Planned: what is left of the estimates of tasks assigned to them that are not started, in progress, or need changes, due in the chosen week or earlier. Left = estimate minus timer minutes, never below 0.',
-        review: 'Tasks waiting for review are not counted: the work was sent, the decision is with the lead.',
+            'Planned: their share of what is left of the estimates of tasks where their part is not sent yet or needs changes, due in the chosen week or earlier. Left = estimate minus every timer minute on the task (never below 0), split evenly among all assignees of the task.',
+        review: 'Parts sent and waiting for review are not counted: the work was sent, the decision is with the lead.',
         status: 'Light below 50 percent of capacity, fits from 50 to 79 percent, full from 80 to 100 percent, over above 100 percent.',
         estimate: 'Tasks without an estimate are not in the plan. Their count has its own column so you know which estimates to fill in.',
     },

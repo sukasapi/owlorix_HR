@@ -1,7 +1,19 @@
 import type { Person } from '@/types';
 
 export type TaskStatus = 'proposed' | 'rejected' | 'todo' | 'in_progress' | 'in_review' | 'changes_requested' | 'done';
+/** One assignee's own part of a task (docs/15): their evidence and their review. */
+export type PartStatus = 'open' | 'submitted' | 'changes_requested' | 'approved';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+/** Who a task list shows as working on it: `name` is the nickname, `full_name` is read out by screen readers. */
+export interface AssigneeName extends Person {
+    full_name: string;
+}
+
+/** A person on a task, with the state of their part. */
+export interface Assignee extends AssigneeName {
+    part_status: PartStatus;
+}
 export type ProjectStatus = 'planned' | 'active' | 'done';
 export type PipelinePhase = 'pre_production' | 'production' | 'post_production';
 
@@ -30,7 +42,10 @@ export interface TaskRow {
     due_date: string | null;
     estimate_minutes: number | null;
     evidence_required: boolean;
-    assignee: Person | null;
+    /** First assigned first; empty when nobody is on the task yet */
+    assignees: Assignee[];
+    /** The viewer's own part; only on lists built for one person (Tugas saya, a sub project) */
+    my_part?: PartStatus | null;
     creator: Person | null;
     logged_minutes: number;
     decision_note: string | null;
@@ -58,6 +73,12 @@ export interface PersonOption {
     username: string;
 }
 
+/** Someone a lead can put on a task: a project member, or a current assignee (`active` false once deactivated). */
+export interface AssigneeOption extends Person {
+    username: string;
+    active: boolean;
+}
+
 export interface RunningTimer {
     session_id: number;
     task_id: number;
@@ -77,6 +98,14 @@ export const STATUS_CHIP: Record<TaskStatus, string> = {
     todo: '',
     done: 'chip-ok',
     rejected: 'chip-bad',
+};
+
+/** Chip tone per part: gold for "waiting for the lead", the same tones as the task statuses otherwise. */
+export const PART_CHIP: Record<PartStatus, string> = {
+    open: '',
+    submitted: 'chip-pending',
+    changes_requested: 'chip-bad',
+    approved: 'chip-ok',
 };
 
 /** Today in the studio time zone as Y-m-d, to compare with due dates. */

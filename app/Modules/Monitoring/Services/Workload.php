@@ -6,6 +6,7 @@ use App\Modules\Attendance\Support\Time;
 use App\Modules\Calendar\Services\WorkdayResolver;
 use App\Modules\Identity\Models\User;
 use App\Modules\Leave\Services\LeaveDays;
+use App\Modules\Projects\Enums\PartStatus;
 use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Models\Task;
 use App\Modules\Projects\Services\TaskPresenter;
@@ -18,9 +19,9 @@ use Illuminate\Support\Facades\DB;
  * Beban kerja (docs/14 5.2): one studio week (Monday to Sunday) per person in the viewer's WorkScope.
  *
  * Capacity: the person's workdays that week (Calendar), minus approved leave days, times the regular day limit.
- * Planned: what is left of the estimates of open tasks assigned to them that are due that week or already overdue.
- * Left = estimate minus timer minutes on the task, never below 0. "Open" here means the assignee can still work on
- * it (todo, in progress, changes requested); a task in review waits for the lead, not for them.
+ * Planned: their share of what is left of the estimates of tasks where their own part is open or needs changes,
+ * due that week or already overdue. Left = estimate minus every timer minute on the task, never below 0, split
+ * evenly among all assignees of the task (docs/15 section 5). A part already sent waits for the lead, not for them.
  */
 class Workload
 {
@@ -143,7 +144,8 @@ class Workload
     }
 
     /**
-     * Left-over estimate per assignee of workable tasks due by $until (so this week or overdue), in one grouped query.
+     * Each person's share of the left-over estimate of tasks due by $until (so this week or overdue) where their part
+     * is open or needs changes, in one grouped query.
      *
      * @param  list<int>  $ids
      * @return array<int, array{minutes: int, tasks: int, without_estimate: int}>
@@ -159,17 +161,24 @@ class Workload
             ->groupBy('task_id')
             ->selectRaw('task_id, sum(timestampdiff(minute, started_at, ended_at)) as minutes');
 
+        $people = DB::table('task_assignees')
+            ->groupBy('task_id')
+            ->selectRaw('task_id, count(*) as n');
+
         return Task::query()->toBase()
+            ->join('task_assignees as ta', 'ta.task_id', '=', 'tasks.id')
+            ->joinSub($people, 'people', 'people.task_id', '=', 'tasks.id')
             ->leftJoinSub($timer, 'timer', 'timer.task_id', '=', 'tasks.id')
-            ->whereIn('tasks.assignee_id', $ids)
-            ->whereIn('tasks.status', [TaskStatus::Todo->value, TaskStatus::InProgress->value, TaskStatus::ChangesRequested->value])
+            ->whereIn('ta.user_id', $ids)
+            ->whereIn('ta.part_status', [PartStatus::Open->value, PartStatus::ChangesRequested->value])
+            ->whereNotIn('tasks.status', array_map(fn (TaskStatus $s) => $s->value, WorkScope::NOT_WORK))
             ->whereNotNull('tasks.due_date')
             ->where('tasks.due_date', '<=', $until)
             ->whereIn('tasks.project_id', fn (QueryBuilder $q) => $q->select('id')->from('projects')->whereNull('deleted_at'))
             ->whereIn('tasks.sub_project_id', fn (QueryBuilder $q) => $q->select('id')->from('sub_projects')->whereNull('deleted_at'))
-            ->groupBy('tasks.assignee_id')
-            ->selectRaw('tasks.assignee_id as id')
-            ->selectRaw('coalesce(sum(greatest(tasks.estimate_minutes - coalesce(timer.minutes, 0), 0)), 0) as minutes')
+            ->groupBy('ta.user_id')
+            ->selectRaw('ta.user_id as id')
+            ->selectRaw('coalesce(round(sum(greatest(tasks.estimate_minutes - coalesce(timer.minutes, 0), 0) / people.n)), 0) as minutes')
             ->selectRaw('count(*) as tasks')
             ->selectRaw('sum(tasks.estimate_minutes is null) as without_estimate')
             ->get()

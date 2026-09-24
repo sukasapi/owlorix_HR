@@ -3,11 +3,11 @@
 namespace App\Modules\Projects\Services;
 
 use App\Modules\Identity\Models\User;
-use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Models\Task;
 use App\Modules\Projects\Models\TaskWorkSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The task timer: one running session per person (unique `open_user_id`). Starting another task stops the running
@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
  */
 class TaskTimer
 {
+    public function __construct(private readonly TaskParts $parts) {}
+
     public function running(User $user): ?TaskWorkSession
     {
         return TaskWorkSession::query()->where('user_id', $user->id)->whereNull('ended_at')->first();
@@ -25,6 +27,10 @@ class TaskTimer
         $now ??= CarbonImmutable::now();
 
         return DB::transaction(function () use ($user, $task, $now) {
+            // The person may have been taken off the task, or sent their part, since the page checked
+            $this->parts->lock($task);
+            abort_unless(Gate::forUser($user)->allows('work', $task), 403);
+
             $running = TaskWorkSession::query()->where('user_id', $user->id)->whereNull('ended_at')->lockForUpdate()->first();
 
             if ($running !== null && $running->task_id === $task->id) {
@@ -39,9 +45,8 @@ class TaskTimer
                 'started_at' => $now,
             ]);
 
-            if ($task->status === TaskStatus::Todo || $task->status === TaskStatus::ChangesRequested) {
-                $task->forceFill(['status' => TaskStatus::InProgress])->save();
-            }
+            // The first session moves a task nobody started to in progress (docs/15 section 2)
+            $this->parts->recompute($task);
 
             return $session;
         });

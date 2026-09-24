@@ -4,11 +4,13 @@ namespace Tests\Feature\WorkMonitor\Support;
 
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Team;
+use App\Modules\Projects\Enums\PartStatus;
 use App\Modules\Projects\Enums\ProjectStatus;
 use App\Modules\Projects\Enums\TaskStatus;
 use App\Modules\Projects\Models\Project;
 use App\Modules\Projects\Models\SubProject;
 use App\Modules\Projects\Models\Task;
+use App\Modules\Projects\Models\TaskAssignee;
 use App\Modules\Projects\Models\TaskSubmission;
 use App\Modules\Projects\Models\TaskWorkSession;
 use App\Modules\Projects\Models\WorkActivityLog;
@@ -35,17 +37,24 @@ final class WorkFixtures
         return $team;
     }
 
-    /** @param  array<string, mixed>  $extra */
-    public static function task(SubProject $sub, ?User $assignee, TaskStatus $status = TaskStatus::Todo, array $extra = []): Task
+    /**
+     * A task with its assignees. Each part follows the task status the way the migration maps it (docs/15): in
+     * review is submitted, changes requested stays, done is approved, anything else is open.
+     *
+     * @param  User|list<User>|null  $assignees
+     * @param  array<string, mixed>  $extra
+     */
+    public static function task(SubProject $sub, User|array|null $assignees, TaskStatus $status = TaskStatus::Todo, array $extra = []): Task
     {
+        $people = $assignees === null ? [] : (is_array($assignees) ? $assignees : [$assignees]);
+
         $task = Task::query()->create([
             'project_id' => $sub->project_id,
             'sub_project_id' => $sub->id,
             'title' => $extra['title'] ?? 'Blocking shot 010',
             'status' => $status,
             'priority' => 'normal',
-            'assignee_id' => $assignee?->id,
-            'created_by' => $assignee?->id ?? User::query()->value('id'),
+            'created_by' => $people[0]->id ?? User::query()->value('id'),
             'due_date' => $extra['due_date'] ?? null,
             'estimate_minutes' => $extra['estimate_minutes'] ?? null,
             'stage_id' => $extra['stage_id'] ?? null,
@@ -54,6 +63,17 @@ final class WorkFixtures
 
         if (isset($extra['created_at'])) {
             $task->forceFill(['created_at' => $extra['created_at']])->save();
+        }
+
+        $part = match ($status) {
+            TaskStatus::InReview => PartStatus::Submitted,
+            TaskStatus::ChangesRequested => PartStatus::ChangesRequested,
+            TaskStatus::Done => PartStatus::Approved,
+            default => PartStatus::Open,
+        };
+
+        foreach ($people as $person) {
+            TaskAssignee::query()->create(['task_id' => $task->id, 'user_id' => $person->id, 'part_status' => $part, 'assigned_at' => CarbonImmutable::now()]);
         }
 
         return $task;
