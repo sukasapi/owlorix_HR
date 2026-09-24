@@ -141,8 +141,9 @@ describe('assigning', function () {
     });
 
     it('stops the running timer of a removed person, keeps their sessions, and writes the change to the audit log', function () {
-        $task = sharedTask($this, [$this->rani, $this->bayu]);
+        // Set the clock before assigning: parts sort by assigned_at, and Citra joins at 03:30
         $this->travelTo(CarbonImmutable::parse('2026-09-24 02:00:00'));
+        $task = sharedTask($this, [$this->rani, $this->bayu]);
         $this->actingAs($this->bayu)->post(route('tasks.start', $task))->assertRedirect();
         $this->travelTo(CarbonImmutable::parse('2026-09-24 03:30:00'));
 
