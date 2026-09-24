@@ -54,4 +54,9 @@ class Project extends Model
     {
         return $this->hasMany(ProjectMilestone::class);
     }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(ProjectLink::class);
+    }
 }

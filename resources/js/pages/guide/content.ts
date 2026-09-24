@@ -571,6 +571,35 @@ export const articles: Article[] = [
             { type: 'p', text: '**Anggaran jam** diisi dalam jam di form proyek dan sub proyek, hanya oleh Project Manager, Project Director, dan Superadmin, dan hanya mereka yang melihat angkanya. Jam terpakai dihitung dari **Log kerja**, jadi sesi timer baru terhitung setelah bukti dikirim. Meter berubah emas mulai 80 persen dan merah lewat 100 persen.' },
         ],
     },
+    {
+        id: 'dokumen-proyek',
+        chapter: 'proyek',
+        title: 'Dokumen proyek',
+        summary: 'Tautan folder dan file Google Drive per tahap, langsung di halaman proyek.',
+        audience: ['projects.view', 'projects.manage'],
+        keywords: ['dokumen', 'drive', 'google drive', 'folder', 'tautan', 'link', 'linktree', 'skenario', 'storyboard', 'aset karakter', 'sound', 'voice over', 'final', 'project tracker'],
+        questions: ['Di mana folder Drive proyek?', 'Cara menambah tautan dokumen', 'Kenapa saya tidak melihat dokumen proyek?'],
+        blocks: [
+            { type: 'p', text: 'Bagian **Dokumen** di halaman proyek berisi tautan ke folder dan file proyek, misalnya **Skenario**, **Storyboard**, **Aset karakter**, **Sound**, **Voice over**, **Animasi**, **Final**, dan **Project tracker**. Klik tautannya untuk membuka Drive di tab baru, atau tombol salin untuk mengirimnya ke chat.' },
+            {
+                type: 'list',
+                items: [
+                    'Hanya orang yang terlibat di proyek yang melihat tautannya: anggota proyek, lead sub proyek, dan pengerja tugas di proyek itu. Team Lead, PM, PD, dan Superadmin melihat semuanya.',
+                    'File tetap di Google Drive. Kalau Drive meminta **Minta akses**, hubungi pemilik folder: izin buka file diatur di Drive, bukan di aplikasi ini.',
+                    'Tautan bertanda **Hanya pengelola** tidak terlihat oleh anggota biasa.',
+                ],
+            },
+            {
+                type: 'steps',
+                items: [
+                    'Team Lead, PM, PD, atau Superadmin membuka halaman proyek, lalu **Tambah tautan**.',
+                    'Pilih jenisnya. Untuk yang tidak ada di daftar, pilih **Lainnya** dan isi namanya.',
+                    'Di Google Drive, klik **Bagikan**, lalu **Salin link**, dan tempel di **Alamat tautan**. Alamat harus diawali https://.',
+                    'Urutan diatur dengan **Atur urutan**, lalu tombol naik dan turun di tiap tautan.',
+                ],
+            },
+        ],
+    },
     // Management
     {
         id: 'persetujuan',
@@ -1171,6 +1200,7 @@ export const terms: Term[] = [
     { term: 'Bagian tugas', definition: 'Kerja satu pengerja di sebuah tugas: timer, bukti, dan review sendiri. Statusnya Belum kirim, Menunggu review, Perlu revisi, atau Disetujui.', article: 'timer-bukti' },
     { term: 'Bukti', definition: 'Tautan atau file hasil kerja yang dikirim untuk review tugas. Setiap pengerja mengirim buktinya sendiri. Wajib kecuali lead mematikannya.', article: 'timer-bukti' },
     { term: 'Cuti', definition: 'Hari kerja yang tidak dipakai bekerja, dengan pengajuan dan persetujuan. Cuti tahunan paling banyak 12 hari kerja per tahun; sisa kuotanya dicatat Superadmin.', article: 'ajukan-cuti' },
+    { term: 'Dokumen proyek', definition: 'Tautan folder dan file Google Drive di halaman proyek, hanya untuk orang yang terlibat di proyek itu.', article: 'dokumen-proyek' },
     { term: 'Hari bukan hari kerja', definition: 'Akhir pekan, hari libur, atau libur studio. Semua jam di hari itu dihitung lembur, kecuali tanggalnya dibuka sebagai hari kerja.', article: 'bukan-hari-kerja' },
     { term: 'Jam PC berbeda', definition: 'Tanda saat jam Windows di PC berbeda lebih dari 2 menit dari server. Jam server yang dipakai.', article: 'persetujuan' },
     { term: 'Jam reguler', definition: 'Jam kerja sampai batas 8 jam per tanggal kerja, tanpa potongan istirahat. Beberapa shift di tanggal yang sama dijumlah.', article: 'pengingat-8-jam' },

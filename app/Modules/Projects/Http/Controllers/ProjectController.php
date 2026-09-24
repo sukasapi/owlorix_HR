@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
+use App\Modules\Projects\Enums\LinkCategory;
 use App\Modules\Projects\Enums\MilestoneKind;
 use App\Modules\Projects\Enums\ProjectStatus;
 use App\Modules\Projects\Enums\TaskStatus;
@@ -13,6 +14,7 @@ use App\Modules\Projects\Http\Requests\AssignProjectMemberRequest;
 use App\Modules\Projects\Http\Requests\StoreProjectRequest;
 use App\Modules\Projects\Http\Requests\UpdateProjectRequest;
 use App\Modules\Projects\Models\Project;
+use App\Modules\Projects\Models\ProjectLink;
 use App\Modules\Projects\Models\ProjectMember;
 use App\Modules\Projects\Models\ProjectMilestone;
 use App\Modules\Projects\Models\SubProject;
@@ -94,6 +96,19 @@ class ProjectController extends Controller
             ->map(fn (ProjectMilestone $m) => TaskPresenter::milestone($m, $today))
             ->values();
 
+        // Links reach only people involved in the project (null tells the page to say so); managers-only ones only
+        // people who manage projects (docs/16)
+        $canManage = $request->user()->hasPermission(Permission::ManageProjects);
+        $links = Gate::allows('viewAny', [ProjectLink::class, $project])
+            ? $project->links()
+                ->when(! $canManage, fn ($q) => $q->where('managers_only', false))
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (ProjectLink $link) => TaskPresenter::link($link))
+                ->values()
+            : null;
+
         // Budget numbers only reach people with projects.budget; for everyone else the key is absent (docs/14 3.3)
         $budget = HourBudget::canSee($request->user())
             ? ['budget' => HourBudget::view($project->budget_minutes, $budgets->loggedForProject($project->id))]
@@ -117,13 +132,15 @@ class ProjectController extends Controller
             'sub_projects' => $subProjects,
             'milestones' => $milestones,
             'milestone_kinds' => array_map(fn (MilestoneKind $k) => $k->value, MilestoneKind::cases()),
+            'links' => $links,
+            'link_categories' => array_map(fn (LinkCategory $c) => $c->value, LinkCategory::cases()),
             'can_budget' => HourBudget::canSee($request->user()),
             'leads' => $request->user()->hasPermission(Permission::ManageProjects)
                 ? User::query()->active()->permission(Permission::ManageProjects->value)->orderBy('name')->get(['id', 'name', 'nickname', 'username'])
                     ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->displayName(), 'username' => $u->username])->values()
                 : [],
             'people' => collect($people)->reject(fn ($p) => in_array($p['id'], $memberIds, true))->values(),
-            'can_manage' => $request->user()->hasPermission(Permission::ManageProjects),
+            'can_manage' => $canManage,
             'statuses' => array_map(fn (ProjectStatus $s) => $s->value, ProjectStatus::cases()),
             'is_assigned' => in_array($request->user()->id, $memberIds, true),
         ]);

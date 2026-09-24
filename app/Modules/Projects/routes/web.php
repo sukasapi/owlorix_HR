@@ -5,6 +5,7 @@ use App\Modules\Projects\Http\Controllers\ActivityLogController;
 use App\Modules\Projects\Http\Controllers\MilestoneController;
 use App\Modules\Projects\Http\Controllers\PipelineStageController;
 use App\Modules\Projects\Http\Controllers\ProjectController;
+use App\Modules\Projects\Http\Controllers\ProjectLinkController;
 use App\Modules\Projects\Http\Controllers\SubProjectController;
 use App\Modules\Projects\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,14 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
                     Route::put('/{project}/milestone/{milestone}', [MilestoneController::class, 'update'])->name('milestones.update');
                     Route::delete('/{project}/milestone/{milestone}', [MilestoneController::class, 'destroy'])->name('milestones.destroy');
                     Route::post('/{project}/milestone/{milestone}/selesai', [MilestoneController::class, 'complete'])->name('milestones.complete');
+                });
+
+                // Document links (docs/16); reading them is part of the project page, for people involved in it
+                Route::scopeBindings()->group(function () {
+                    Route::post('/{project}/dokumen', [ProjectLinkController::class, 'store'])->name('links.store');
+                    Route::put('/{project}/dokumen/{link}', [ProjectLinkController::class, 'update'])->name('links.update');
+                    Route::delete('/{project}/dokumen/{link}', [ProjectLinkController::class, 'destroy'])->name('links.destroy');
+                    Route::post('/{project}/dokumen/{link}/pindah', [ProjectLinkController::class, 'move'])->name('links.move');
                 });
             });
         });
