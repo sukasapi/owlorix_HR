@@ -53,10 +53,12 @@ interface Props {
     items: Milestone[];
     kinds: MilestoneKind[];
     canManage: boolean;
+    /** Inside a project tab: the tab names the section, so the heading is for screen readers only */
+    inTab?: boolean;
 }
 
 /** Milestones of one project, sorted by date. Everyone who sees the project reads them; managers set them. */
-export function Milestones({ projectId, items, kinds, canManage }: Props) {
+export function Milestones({ projectId, items, kinds, canManage, inTab = false }: Props) {
     const t = useT();
     const [dialog, setDialog] = useState<Milestone | 'new' | null>(null);
     const [failed, setFailed] = useState(false);
@@ -85,13 +87,13 @@ export function Milestones({ projectId, items, kinds, canManage }: Props) {
     };
 
     return (
-        <section className="mt-8" aria-labelledby="milestones-heading">
+        <section className={inTab ? '' : 'mt-8'} aria-labelledby="milestones-heading">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="min-w-0">
-                    <h2 id="milestones-heading" className="h2">
+                    <h2 id="milestones-heading" className={inTab ? 'sr-only' : 'h2'}>
                         {t('projects.milestones.heading')}
                     </h2>
-                    <p className="m-0 mt-1 max-w-[70ch] text-sm text-muted">{t('projects.milestones.lead')}</p>
+                    <p className={`m-0 max-w-[70ch] text-sm text-muted ${inTab ? '' : 'mt-1'}`}>{t('projects.milestones.lead')}</p>
                 </div>
                 {canManage && items.length > 0 && (
                     <button type="button" className="btn btn-secondary" onClick={() => setDialog('new')}>

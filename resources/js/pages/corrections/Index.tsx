@@ -139,7 +139,7 @@ export default function CorrectionsIndex({ abilities, filters, waiting, history,
             <div className="flex flex-col gap-4">
                 <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                        <h1 ref={listHeadingRef} tabIndex={-1} className="h1 lg:text-[40px]">
+                        <h1 ref={listHeadingRef} tabIndex={-1} className="h1">
                             {t('corrections.title')}
                         </h1>
                         <Tabs

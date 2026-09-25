@@ -102,11 +102,24 @@ export interface Summary {
     };
 }
 
+/** A lead asked why the PC was idle; the person answers from Perlu kamu. */
+export interface IdleQuestion {
+    id: number;
+    work_date: string | null;
+    started_at: string;
+    ended_at: string | null;
+    minutes: number | null;
+    tag: IdlePeriod['tag'];
+    question: string | null;
+    asked_by: string | null;
+}
+
 export interface MyDayProps {
     summary: Summary;
     day: DayVerdict;
     /** Null for an employment type without a weekly target (freelance) */
     week: WeekTargetData | null;
+    idle_questions: IdleQuestion[];
 }
 
 /** Refusals from the web clock come back as a stable code; everything else is a ready message. */

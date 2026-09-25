@@ -27,6 +27,8 @@ export interface BoardPerson {
     leave: { type: string } | null;
     /** This week against the weekly target (docs/02 3.12); null for a type without one */
     week: WeekTargetData | null;
+    /** The task this person's timer runs on now ("sedang mengerjakan"); null when no timer runs */
+    task?: { id: number; title: string; project: string | null; started_at: string | null } | null;
 }
 
 export interface Board {

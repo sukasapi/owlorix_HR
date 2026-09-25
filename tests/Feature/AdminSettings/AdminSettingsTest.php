@@ -41,7 +41,7 @@ describe('authorization', function () {
                 ->where('fields.0.applies', 'new_shifts')
                 ->where('fields.0.rule', '3.3.1')
                 ->where('fields.0.changed_by', null)
-                ->where('nav', fn ($nav) => collect(collect($nav)->firstWhere('group', 'admin')['items'])->contains('key', 'rules')));
+                ->where('nav', fn ($nav) => navChildren($nav, 'settings')->contains('rules')));
     });
 
     it('refuses everyone else', function (Role $role) {

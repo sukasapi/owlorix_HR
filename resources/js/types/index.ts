@@ -24,6 +24,10 @@ export interface NavItem {
     key: string;
     href: string;
     route: string;
+    /** Pages grouped under one menu item (Persetujuan, Pantauan, Pengaturan); shown as tabs or on the Pengaturan page */
+    children?: NavItem[];
+    /** Pengaturan pages only: which block of the Pengaturan page lists it */
+    section?: string;
 }
 
 export interface NavGroup {

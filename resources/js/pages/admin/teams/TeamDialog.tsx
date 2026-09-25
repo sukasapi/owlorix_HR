@@ -237,7 +237,7 @@ function AddMemberForm({ team, people, onFailed, onBefore }: { team: TeamRow; pe
     };
 
     return (
-        <form onSubmit={submit} noValidate className="flex flex-col gap-2.5 sm:flex-row sm:items-end">
+        <form onSubmit={submit} noValidate className="flex flex-col gap-2.5 sm:flex-row sm:items-start">
             <SelectField
                 label={t('teams.manage_dialog.add_label')}
                 name="user_id"
@@ -253,7 +253,7 @@ function AddMemberForm({ team, people, onFailed, onBefore }: { team: TeamRow; pe
                     </option>
                 ))}
             </SelectField>
-            <button type="submit" className="btn btn-secondary sm:mb-0" disabled={form.processing || form.data.user_id === ''}>
+            <button type="submit" className="btn btn-secondary field-action" disabled={form.processing || form.data.user_id === ''}>
                 <UserPlus weight="bold" size={18} aria-hidden />
                 {t('teams.manage_dialog.add_submit')}
             </button>

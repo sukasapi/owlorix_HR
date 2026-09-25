@@ -58,6 +58,7 @@ export default {
         answer_prompt: 'Jawab pengingat 8 jam di atas: absen pulang atau lanjut lembur.',
         heartbeat_note: 'Selama shift berjalan, halaman ini mengirim tanda aktif tiap menit, juga saat tab ada di belakang. Kalau tab ditutup atau layar HP terkunci, shift terputus dan bisa dilanjutkan dalam :minutes menit.',
         heartbeat_failed: 'Tanda aktif gagal terkirim pukul :time. Periksa koneksi internet dan biarkan halaman ini terbuka. Tanpa tanda aktif lebih dari :minutes menit, shift terputus.',
+        how_it_works: 'Cara kerja absen dari web',
         no_idle_note: 'Browser tidak bisa melihat keyboard dan mouse, jadi waktu diam tidak dicatat. Saat lembur, kamu ditanya masih lembur atau tidak tiap :minutes menit.',
     },
     reminders: {
@@ -87,8 +88,29 @@ export default {
         why: 'Browser tidak bisa melihat apakah kamu masih di depan layar, jadi pertanyaan ini muncul tiap :minutes menit selama lembur.',
         next: 'Pertanyaan masih lembur berikutnya pukul :time.',
     },
+    needs: {
+        heading: 'Perlu kamu',
+        empty: 'Tidak ada yang menunggu jawabanmu.',
+        approvals: ':count lembur menunggu keputusanmu',
+        tasks: ':count keputusan tugas menunggumu',
+        open: 'Buka',
+        idle_question: ':name minta penjelasan PC diam :date, :start sampai :end',
+        idle_question_open: ':name minta penjelasan PC diam :date, sejak :start',
+        idle_answer: 'Jawab',
+        idle_answer_title: 'Penjelasan PC diam',
+        idle_answer_label: 'Apa yang kamu kerjakan saat itu?',
+        idle_answer_help: 'Minimal 5 karakter. :name membaca jawaban ini.',
+        idle_answer_submit: 'Kirim jawaban',
+        idle_tagged: 'Kamu menandainya :tag.',
+        idle_closed: 'Pertanyaan ini sudah dijawab atau ditutup. Halaman sudah diperbarui.',
+    },
+    day_line: {
+        heading: 'Hari ini dalam satu garis',
+        work: 'Kerja',
+        idle: 'PC diam',
+        mark: 'Batas 8 jam',
+    },
     follow_ups: {
-        heading: 'Perlu kamu isi',
         desktop_only: 'Absen dari web sedang dimatikan. Tulis laporan dan klaim di aplikasi desktop Owlorix HR.',
     },
     report: {

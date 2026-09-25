@@ -58,6 +58,7 @@ export default {
         answer_prompt: 'Answer the 8-hour reminder above: clock out or keep working.',
         heartbeat_note: 'While the shift runs, this page sends a heartbeat every minute, also when the tab is in the background. If you close the tab or your phone screen locks, the shift is interrupted and can be continued within :minutes minutes.',
         heartbeat_failed: 'A heartbeat failed to send at :time. Check your internet connection and keep this page open. After more than :minutes minutes without a heartbeat, the shift is interrupted.',
+        how_it_works: 'How clocking in from the web works',
         no_idle_note: 'A browser cannot see your keyboard or mouse, so quiet time is not recorded. During overtime you are asked every :minutes minutes whether you are still working.',
     },
     reminders: {
@@ -87,8 +88,29 @@ export default {
         why: 'A browser cannot tell whether you are at the screen, so this question comes every :minutes minutes during overtime.',
         next: 'Next overtime check at :time.',
     },
+    needs: {
+        heading: 'Needs you',
+        empty: 'Nothing is waiting for your answer.',
+        approvals: ':count overtime requests wait for your decision',
+        tasks: ':count task decisions wait for you',
+        open: 'Open',
+        idle_question: ':name asks about idle PC time on :date, :start to :end',
+        idle_question_open: ':name asks about idle PC time on :date, from :start',
+        idle_answer: 'Answer',
+        idle_answer_title: 'Explain idle PC time',
+        idle_answer_label: 'What were you doing at that time?',
+        idle_answer_help: 'At least 5 characters. :name reads this answer.',
+        idle_answer_submit: 'Send answer',
+        idle_tagged: 'You tagged it :tag.',
+        idle_closed: 'This question was already answered or closed. The page is up to date.',
+    },
+    day_line: {
+        heading: 'Today on one line',
+        work: 'Work',
+        idle: 'PC idle',
+        mark: '8-hour mark',
+    },
     follow_ups: {
-        heading: 'Waiting for you',
         desktop_only: 'Clocking in from the web is turned off. Write reports and claims in the Owlorix HR desktop app.',
     },
     report: {

@@ -42,6 +42,7 @@ enum Role: string
             self::ProjectDirector => [...$management, Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions, Permission::OverseeProjects, Permission::ApproveAnyLeave, Permission::ManageBudgets, Permission::ManagePipeline],
             self::Superadmin => [
                 Permission::ClockIn,
+                Permission::ViewTeamBoard,
                 Permission::ViewProjects,
                 Permission::ManageProjects,
                 Permission::OverseeProjects,
@@ -62,6 +63,7 @@ enum Role: string
                 Permission::ExportReports,
                 Permission::ViewAuditLog,
                 Permission::ViewActivityMonitor,
+                Permission::ViewAppUsage,
                 Permission::ManageLeave,
             ],
         };

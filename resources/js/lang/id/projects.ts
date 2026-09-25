@@ -165,4 +165,14 @@ export default {
         source_project: 'Dihitung dari Log kerja proyek ini. Log yang dihapus tidak ikut.',
         source_sub: 'Dihitung dari Log kerja tugas di sub proyek ini. Log yang dihapus tidak ikut.',
     },
+    tabs: {
+        label: 'Bagian proyek',
+    },
+    facts: {
+        tasks: 'Tugas selesai',
+        tasks_value: ':done dari :total',
+        no_tasks: 'Belum ada tugas',
+        next_milestone: 'Milestone berikutnya',
+        no_milestone: 'Belum ada yang terjadwal',
+    },
 };

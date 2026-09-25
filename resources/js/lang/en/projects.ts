@@ -165,4 +165,14 @@ export default {
         source_project: 'Counted from the Work log of this project. Deleted logs are left out.',
         source_sub: 'Counted from the Work log of tasks in this sub project. Deleted logs are left out.',
     },
+    tabs: {
+        label: 'Project parts',
+    },
+    facts: {
+        tasks: 'Tasks done',
+        tasks_value: ':done of :total',
+        no_tasks: 'No tasks yet',
+        next_milestone: 'Next milestone',
+        no_milestone: 'Nothing scheduled',
+    },
 };

@@ -43,6 +43,12 @@ final class SettingsFields
             self::int('leave', 'leave.annual_quota_days', 'days', 0, 40, '', 'next_request'),
 
             self::int('monitoring', 'monitoring.access_log_days', 'days', 30, 730, '', 'daily'),
+            ['group' => 'monitoring', 'key' => 'monitoring.app_usage', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '', 'applies' => 'desktop'],
+            ['group' => 'monitoring', 'key' => 'monitoring.app_usage_permanent', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '', 'applies' => 'desktop'],
+            ['group' => 'monitoring', 'key' => 'monitoring.app_usage_contract', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '', 'applies' => 'desktop'],
+            ['group' => 'monitoring', 'key' => 'monitoring.app_usage_freelance', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '', 'applies' => 'desktop'],
+            ['group' => 'monitoring', 'key' => 'monitoring.app_usage_intern', 'type' => 'boolean', 'unit' => null, 'min' => null, 'max' => null, 'rule' => '', 'applies' => 'desktop'],
+            self::int('monitoring', 'monitoring.app_usage_active_days', 'days', 30, 365, '', 'daily'),
         ];
     }
 

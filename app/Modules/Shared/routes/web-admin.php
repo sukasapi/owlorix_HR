@@ -5,7 +5,13 @@ use App\Modules\Shared\Http\Controllers\Admin\AppSettingsController;
 use App\Modules\Shared\Http\Controllers\Admin\AuditLogController;
 use App\Modules\Shared\Http\Controllers\Admin\SettingsController;
 use App\Modules\Shared\Http\Controllers\BrandLogoController;
+use App\Modules\Shared\Http\Controllers\SettingsHubController;
 use Illuminate\Support\Facades\Route;
+
+// Pengaturan: the page that lists every admin page the person can open (403 when there is none).
+Route::middleware(['auth', 'password.changed'])
+    ->get('/pengaturan', SettingsHubController::class)
+    ->name('settings.index');
 
 // Aturan: rule settings (Superadmin).
 Route::middleware(['auth', 'password.changed', 'permission:'.Permission::ManageSettings->value])

@@ -11,7 +11,7 @@ export default {
         web: 'Presensi web',
         work_target: 'Target kerja mingguan',
         leave: 'Cuti',
-        monitoring: 'Monitor aktivitas',
+        monitoring: 'Pantauan',
     },
     group_intro: {
         work_hours: 'Batas harian dan pengingat 8 jam.',
@@ -21,7 +21,7 @@ export default {
         web: 'Absen dari browser, termasuk dari HP.',
         work_target: 'Target jam per minggu menurut jenis karyawan. Hanya ditampilkan di Hari ini, Riwayat, Tim hari ini, dan Beban kerja; tidak memotong jam atau lembur. Freelance tidak punya target.',
         leave: 'Kuota cuti tahunan bawaan.',
-        monitoring: 'Berapa lama catatan akses disimpan.',
+        monitoring: 'Berapa lama catatan akses disimpan, dan pencatatan aplikasi di PC studio (Aktivitas detail).',
     },
     units: {
         minutes: 'menit',
@@ -125,6 +125,30 @@ export default {
             access_log_days: {
                 label: 'Simpan catatan akses selama',
                 help: 'Catatan masuk, halaman yang dibuka, aksi, dan akses ditolak di Monitor aktivitas. Yang lebih lama dihapus setiap malam pukul 02.30. Log audit dan data absensi tidak ikut dihapus.',
+            },
+            app_usage: {
+                label: 'Catat aplikasi yang dipakai di PC studio',
+                help: 'Aplikasi desktop mencatat nama aplikasi dan judul jendela yang sedang dipakai, termasuk judul halaman di browser, hanya selama absen masuk, sesuai Peraturan Perusahaan. Hanya Superadmin yang melihatnya di Pantauan, Aktivitas detail.',
+            },
+            app_usage_permanent: {
+                label: 'Catat karyawan tetap',
+                help: 'Berlaku kalau pencatatan aplikasi di atas menyala.',
+            },
+            app_usage_contract: {
+                label: 'Catat karyawan kontrak',
+                help: 'Berlaku kalau pencatatan aplikasi di atas menyala.',
+            },
+            app_usage_freelance: {
+                label: 'Catat freelance',
+                help: 'Berlaku kalau pencatatan aplikasi di atas menyala.',
+            },
+            app_usage_intern: {
+                label: 'Catat magang',
+                help: 'Berlaku kalau pencatatan aplikasi di atas menyala.',
+            },
+            app_usage_active_days: {
+                label: 'Pindahkan aktivitas detail ke arsip setelah',
+                help: 'Data yang lebih lama dipindah ke arsip setiap malam pukul 02.45, tidak dihapus. Data arsip tetap bisa dibuka di Aktivitas detail.',
             },
         },
         sync: {

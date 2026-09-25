@@ -18,11 +18,11 @@ describe('imposter mode gate', function () {
 
         // The menu leaves the item out, so it never links to the 404
         $this->actingAs($admin)->get(route('my-day'))
-            ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => ! collect($nav)->pluck('items')->flatten(1)->contains('key', 'imposter')));
+            ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => ! navKeys($nav)->contains('imposter')));
 
         config(['owlorix.imposter.enabled' => true]);
         $this->actingAs($admin)->get(route('my-day'))
-            ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => collect($nav)->pluck('items')->flatten(1)->contains('key', 'imposter')));
+            ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => navChildren($nav, 'settings')->contains('imposter')));
     });
 
     it('refuses non-superadmins', function (Role $role) {

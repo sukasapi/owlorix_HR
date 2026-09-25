@@ -1,6 +1,12 @@
 export default {
     nav: {
-        groups: { my_work: 'My work', team: 'Team', production: 'Production', people: 'People and access', admin: 'Settings', oversight: 'Oversight', help: 'Help' },
+        groups: { my_work: 'My work', team: 'Team', production: 'Production', more: 'More' },
+        settings: 'Settings',
+        // Phone bottom bar: five items share 320px, so long names get a short form
+        short: { my_day: 'Today', my_tasks: 'Tasks', approvals: 'Approve', team_today: 'Team', activity_log: 'Log', monitoring: 'Monitor' },
+        monitoring: 'Monitoring',
+        app_usage: 'Detailed activity',
+        tabs: { team_today: 'Board', team_idle: 'Idle PC', team_logs: 'Work log', approvals: 'Overtime', leave_approvals: 'Leave', corrections: 'Corrections', work_monitor: 'Work monitor', workload: 'Workload', app_usage: 'Detailed activity' },
         my_day: 'My day',
         history: 'History',
         overtime: 'Overtime',
@@ -29,15 +35,15 @@ export default {
         activity_monitor: 'Activity monitor',
         menu: 'Menu',
         main: 'Main navigation',
-        group_badge: ':count waiting in this group',
+        group_badge: ':count waiting',
         close_menu: 'Close menu',
     },
     shell: {
         language: 'Language',
         theme_light: 'Light',
         theme_dark: 'Dark',
-        switch_to_dark: 'Switch to dark theme',
-        switch_to_light: 'Switch to light theme',
+        theme_system: 'Follow system',
+        theme: 'Theme',
         account: 'Account',
         change_password: 'Change password',
         sign_out: 'Sign out of the web app',

@@ -11,7 +11,7 @@ export default {
         web: 'Web attendance',
         work_target: 'Weekly work target',
         leave: 'Leave',
-        monitoring: 'Activity monitor',
+        monitoring: 'Monitoring',
     },
     group_intro: {
         work_hours: 'The daily limit and the 8-hour prompt.',
@@ -21,7 +21,7 @@ export default {
         web: 'Clocking in from a browser, phones included.',
         work_target: 'Hours per week by employment type. Only shown on Today, History, Team today, and Workload; it never cuts time or overtime. Freelancers have no target.',
         leave: 'Default yearly leave quota.',
-        monitoring: 'How long access records are kept.',
+        monitoring: 'How long access records are kept, and recording applications on studio PCs (Detailed activity).',
     },
     units: {
         minutes: 'minutes',
@@ -125,6 +125,30 @@ export default {
             access_log_days: {
                 label: 'Keep access records for',
                 help: 'Sign-ins, pages opened, actions, and refused requests in the Activity monitor. Older records are deleted every night at 02:30. The audit log and attendance data are never deleted by this.',
+            },
+            app_usage: {
+                label: 'Record applications used on studio PCs',
+                help: 'The desktop app records the application name and window title in use, including the page title in a browser, only while clocked in, as set out in the company regulations. Only Superadmin sees it, in Monitoring, Detailed activity.',
+            },
+            app_usage_permanent: {
+                label: 'Record permanent employees',
+                help: 'Applies while recording applications above is on.',
+            },
+            app_usage_contract: {
+                label: 'Record contract employees',
+                help: 'Applies while recording applications above is on.',
+            },
+            app_usage_freelance: {
+                label: 'Record freelancers',
+                help: 'Applies while recording applications above is on.',
+            },
+            app_usage_intern: {
+                label: 'Record interns',
+                help: 'Applies while recording applications above is on.',
+            },
+            app_usage_active_days: {
+                label: 'Move detailed activity to the archive after',
+                help: 'Older data moves to the archive every night at 02:45 and is never deleted. Archived data still opens in Detailed activity.',
             },
         },
         sync: {

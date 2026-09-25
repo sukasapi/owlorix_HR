@@ -49,6 +49,8 @@ enum Permission: string
     case ViewAuditLog = 'audit.view';
     // Monitor aktivitas: sign-ins, page visits, changes and clock events of everyone
     case ViewActivityMonitor = 'monitoring.activity';
+    // Aktivitas detail: applications and window titles on studio PCs during work (Superadmin only, 2026-09-25)
+    case ViewAppUsage = 'monitoring.app_usage';
     // Leave types, yearly quotas, and every request
     case ManageLeave = 'leave.manage';
 }

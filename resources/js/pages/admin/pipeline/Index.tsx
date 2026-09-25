@@ -317,7 +317,7 @@ function EditStagePanel({ stage, titleId, onClose }: { stage: StageRow; titleId:
                         onChange={(e) => form.setData('name', e.target.value)}
                         error={form.errors.name}
                     />
-                    <button type="submit" className="btn btn-primary sm:mt-[27px]" disabled={form.processing || form.data.name.trim() === stage.name}>
+                    <button type="submit" className="btn btn-primary field-action" disabled={form.processing || form.data.name.trim() === stage.name}>
                         {form.processing ? t('common.actions.saving') : t('pipeline.form.submit_edit')}
                     </button>
                 </form>

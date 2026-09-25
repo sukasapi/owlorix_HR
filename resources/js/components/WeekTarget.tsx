@@ -44,7 +44,7 @@ export function WeekTargetBar({ week, className = '' }: { week: WeekTargetData; 
 
     return (
         <div
-            className={`h-2.5 overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--eye-brow)_35%,transparent)] bg-[color-mix(in_srgb,var(--eye-brow)_18%,transparent)] ${className}`}
+            className={`meter ${className}`}
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={week.target_minutes}
@@ -52,7 +52,7 @@ export function WeekTargetBar({ week, className = '' }: { week: WeekTargetData; 
             aria-valuetext={text}
             aria-label={t('week-target.label')}
         >
-            <span className="block h-full rounded-md bg-[var(--eye-brow)]" style={{ width: `${percent}%` }} />
+            <span style={{ width: `${percent}%` }} />
         </div>
     );
 }

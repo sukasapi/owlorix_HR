@@ -17,7 +17,8 @@ it('gives every role only its own permissions', function (Role $role, array $has
     'team lead' => [Role::TeamLead, [Permission::ApproveOvertime, Permission::ViewTeamBoard, Permission::OpenWorkdays], [Permission::ApproveAnyOvertime, Permission::ManageUsers, Permission::ManageCalendar]],
     'project manager' => [Role::ProjectManager, [Permission::ApproveOvertime, Permission::ApproveAnyOvertime], [Permission::ChangeOvertimeDecisions, Permission::ManageUsers]],
     'project director' => [Role::ProjectDirector, [Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions], [Permission::ManageUsers, Permission::ApplyCorrections]],
-    'superadmin' => [Role::Superadmin, [Permission::ManageUsers, Permission::ManageCalendar, Permission::ApplyCorrections, Permission::ExportReports], [Permission::ApproveOvertime, Permission::ViewTeamBoard]],
+    // Superadmin sees Tim hari ini and its tabs (owner, 2026-09-25) but still approves no overtime
+    'superadmin' => [Role::Superadmin, [Permission::ManageUsers, Permission::ManageCalendar, Permission::ApplyCorrections, Permission::ExportReports, Permission::ViewTeamBoard], [Permission::ApproveOvertime]],
 ]);
 
 it('combines permissions when a person holds several roles', function () {
@@ -39,7 +40,8 @@ it('shows only navigation items whose page exists and the person may open', func
             // Produksi shows only the project list an employee may read; no team, management or admin pages
             ->where('nav.1.group', 'production')
             ->where('nav.1.items', fn ($items) => collect($items)->pluck('key')->all() === ['projects'])
-            ->where('nav.2.group', 'help')
-            ->where('nav.2.items.0.key', 'guide')
+            // The pinned group holds only Panduan: no Pengaturan without an admin page to open
+            ->where('nav.2.group', 'more')
+            ->where('nav.2.items', fn ($items) => collect($items)->pluck('key')->all() === ['guide'])
             ->missing('nav.3'));
 });

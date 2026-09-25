@@ -65,10 +65,12 @@ interface Props {
     items: ProjectLink[] | null;
     categories: LinkCategory[];
     canManage: boolean;
+    /** Inside a project tab: the tab names the section, so the heading is for screen readers only */
+    inTab?: boolean;
 }
 
 /** Document links of one project, in the order the managers set. Everyone involved opens them; managers set them. */
-export function ProjectLinks({ projectId, items, categories, canManage }: Props) {
+export function ProjectLinks({ projectId, items, categories, canManage, inTab = false }: Props) {
     const t = useT();
     const [dialog, setDialog] = useState<ProjectLink | 'new' | null>(null);
     const [reordering, setReordering] = useState(false);
@@ -140,13 +142,13 @@ export function ProjectLinks({ projectId, items, categories, canManage }: Props)
     const nextCategory = categories.find((c) => c !== 'other' && !list.some((link) => link.category === c)) ?? 'other';
 
     return (
-        <section className="mt-8" aria-labelledby="links-heading">
+        <section className={inTab ? '' : 'mt-8'} aria-labelledby="links-heading">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="min-w-0">
-                    <h2 id="links-heading" className="h2">
+                    <h2 id="links-heading" className={inTab ? 'sr-only' : 'h2'}>
                         {t('projects.links.heading')}
                     </h2>
-                    {items !== null && <p className="m-0 mt-1 max-w-[70ch] text-sm text-muted">{t('projects.links.lead')}</p>}
+                    {items !== null && <p className={`m-0 max-w-[70ch] text-sm text-muted ${inTab ? '' : 'mt-1'}`}>{t('projects.links.lead')}</p>}
                 </div>
                 {canManage && list.length > 0 && (
                     <div className="flex flex-wrap gap-2">

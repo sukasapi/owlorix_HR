@@ -53,4 +53,6 @@ export const navIcons: Record<string, Icon> = {
     workload: Gauge,
     pipeline: FlowArrow,
     activity_monitor: Pulse,
+    monitoring: Gauge,
+    settings: GearSix,
 };

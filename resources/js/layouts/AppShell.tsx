@@ -1,14 +1,14 @@
 import { OwlEyes } from '@/components/owl/OwlEyes';
 import { Avatar } from '@/components/ui/Avatar';
 import { Notice } from '@/components/ui/Notice';
-import { formatLongDate } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
-import { effectiveTheme, saveTheme, useThemeSync } from '@/lib/theme';
-import type { Brand, NavGroup, SharedProps, TaskTimer } from '@/types';
+import { saveTheme, useThemeSync } from '@/lib/theme';
+import type { Brand, NavGroup, NavItem, SharedProps, TaskTimer, ThemePreference } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsNine, Key, Moon, SignOut, Sun, Timer, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, CaretUpDown, Key, List, SignOut, Timer, UserCircle, X } from '@phosphor-icons/react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { navIcons } from './navIcons';
+import { PINNED_GROUP, badgeCount, currentChild, currentSection, itemIsCurrent } from './navModel';
 
 interface Props {
     title: string;
@@ -16,25 +16,18 @@ interface Props {
 }
 
 const SIDEBAR_KEY = 'owlorix.sidebar_collapsed';
-const NAV_OPEN_KEY = 'owlorix.nav_open';
-/** Groups a long menu opens with; settings, people, oversight and help start folded (docs/DESIGN.md, App shell) */
-const OPEN_BY_DEFAULT = ['my_work', 'team', 'production'];
-/** A menu with at most this many items is short enough to show whole, without folding */
-const FOLD_ABOVE = 12;
-const BOTTOM_BAR_ORDER = ['my_day', 'approvals', 'team_today', 'history', 'overtime', 'my_tasks', 'activity_log', 'projects', 'reports', 'calendar', 'people', 'teams'];
+/** Phone bottom bar: the first four of these the person can open, then Menu. */
+const BOTTOM_BAR_ORDER = ['my_day', 'my_tasks', 'approvals', 'team_today', 'projects', 'history', 'overtime', 'leave', 'activity_log', 'calendar', 'reports', 'monitoring', 'settings', 'guide'];
+
+/** The short name for the phone bottom bar, or the full name when there is no short one. */
+function shortLabel(t: (key: string) => string, key: string) {
+    const short = t(`common.nav.short.${key}`);
+    return short === `common.nav.short.${key}` ? t(`common.nav.${key}`) : short;
+}
 
 function bottomRank(key: string) {
     const index = BOTTOM_BAR_ORDER.indexOf(key);
     return index === -1 ? BOTTOM_BAR_ORDER.length : index;
-}
-
-function isCurrent(url: string, href: string) {
-    const path = url.split('?')[0];
-    return href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`);
-}
-
-function todayInStudio(timezone: string) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
 }
 
 function readCollapsed(): boolean {
@@ -42,23 +35,6 @@ function readCollapsed(): boolean {
         return localStorage.getItem(SIDEBAR_KEY) === '1';
     } catch {
         return false;
-    }
-}
-
-function readNavOpen(): Record<string, boolean> {
-    try {
-        const stored: unknown = JSON.parse(localStorage.getItem(NAV_OPEN_KEY) ?? '{}');
-        return stored !== null && typeof stored === 'object' ? (stored as Record<string, boolean>) : {};
-    } catch {
-        return {};
-    }
-}
-
-function writeNavOpen(value: Record<string, boolean>) {
-    try {
-        localStorage.setItem(NAV_OPEN_KEY, JSON.stringify(value));
-    } catch {
-        // Private mode / blocked storage: folding is remembered for this page only.
     }
 }
 
@@ -70,11 +46,21 @@ function writeCollapsed(value: boolean) {
     }
 }
 
+function useBadges(): Record<string, number> {
+    return (usePage<SharedProps>().props.nav_badges ?? {}) as Record<string, number>;
+}
+
+/**
+ * App shell, layout A from docs/desainUI_v2: one quiet surface, no top bar on a wide screen. The menu carries the
+ * running task timer and the account (language and theme live there, not on every page). Phones get a slim top bar,
+ * a bottom bar with the four most used pages, and a Menu sheet for the rest.
+ */
 export default function AppShell({ title, children }: Props) {
     useThemeSync();
     const { props, url } = usePage<SharedProps>();
     const t = useT();
     const locale = useLocale();
+    const badges = useBadges();
     const [menuOpen, setMenuOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
 
@@ -83,22 +69,20 @@ export default function AppShell({ title, children }: Props) {
 
     const toggleCollapsed = () => {
         setCollapsed((prev) => {
-            const next = !prev;
-            writeCollapsed(next);
-            return next;
+            writeCollapsed(!prev);
+            return !prev;
         });
     };
 
     const nav = props.nav;
-    const flat = nav.flatMap((g) => g.items);
+    const mainGroups = nav.filter((group) => group.group !== PINNED_GROUP);
+    const pinned = nav.find((group) => group.group === PINNED_GROUP);
+    const flat = nav.flatMap((group) => group.items);
     const bottomItems = [...flat].sort((a, b) => bottomRank(a.key) - bottomRank(b.key)).slice(0, 4);
-    const menuOnlyItems = flat.filter((item) => !bottomItems.includes(item));
+    const menuCount = flat.filter((item) => !bottomItems.includes(item)).reduce((sum, item) => sum + badgeCount(item, badges), 0);
 
-    // md+: lock shell to the viewport so the sidebar never grows past the screen.
-    // Only the main column scrolls. Phone keeps document scroll + bottom bar.
-    const shellCols = collapsed
-        ? 'md:grid-cols-[72px_minmax(0,1fr)]'
-        : 'md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]';
+    // md+: lock the shell to the viewport so the menu never grows past the screen; only the page column scrolls.
+    const shellCols = collapsed ? 'md:grid-cols-[76px_minmax(0,1fr)]' : 'md:grid-cols-[248px_minmax(0,1fr)]';
 
     return (
         <>
@@ -107,46 +91,51 @@ export default function AppShell({ title, children }: Props) {
                 {locale === 'id' ? 'Lompat ke isi' : 'Skip to content'}
             </a>
 
-            <div className={`min-h-dvh md:h-dvh md:overflow-hidden md:grid ${shellCols}`}>
-                <aside
-                    className={`hidden border-r border-line bg-surface md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden ${
-                        collapsed ? 'md:w-[72px]' : ''
-                    }`}
-                >
-                    <div className={`flex flex-none items-center gap-1 ${collapsed ? 'justify-center px-2 pt-3 pb-2' : 'px-3 pt-3 pb-2 sm:px-3.5'}`}>
-                        <Brand collapsed={collapsed} />
-                    </div>
-
-                    <div className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain ${collapsed ? 'px-2' : 'px-2.5 sm:px-3.5'}`}>
-                        <NavList groups={nav} url={url} compact collapsed={collapsed} />
-                    </div>
-
-                    <div className={`flex-none border-t border-line ${collapsed ? 'px-2 py-2' : 'px-2.5 py-2 sm:px-3.5'}`}>
+            <div className={`min-h-dvh md:grid md:h-dvh md:overflow-hidden ${shellCols}`}>
+                <aside className="hidden border-r border-line bg-paper md:flex md:h-full md:min-h-0 md:flex-col" aria-label={t('common.nav.main')}>
+                    <div className={`flex flex-none items-center gap-1 pt-4 pb-3 ${collapsed ? 'flex-col px-2' : 'px-3'}`}>
+                        <BrandLink collapsed={collapsed} />
                         <button
                             type="button"
                             onClick={toggleCollapsed}
-                            className={`nav-item nav-item--compact w-full ${collapsed ? 'justify-center px-0' : ''}`}
+                            className={`inline-flex size-10 flex-none cursor-pointer items-center justify-center rounded-sm text-muted hover:bg-surface hover:text-ink ${collapsed ? '' : 'ml-auto'}`}
                             aria-pressed={collapsed}
                             aria-label={collapsed ? t('common.shell.sidebar_expand') : t('common.shell.sidebar_collapse')}
                             title={collapsed ? t('common.shell.sidebar_expand') : t('common.shell.sidebar_collapse')}
                         >
                             {collapsed ? <CaretDoubleRight weight="bold" size={18} aria-hidden /> : <CaretDoubleLeft weight="bold" size={18} aria-hidden />}
-                            {!collapsed && <span className="min-w-0 truncate">{t('common.shell.sidebar_collapse')}</span>}
                         </button>
-                        {!collapsed && <SidebarFooter />}
+                    </div>
+
+                    {props.task_timer && (
+                        <div className={`flex-none pb-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+                            <TimerCard timer={props.task_timer} collapsed={collapsed} />
+                        </div>
+                    )}
+
+                    <div className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+                        <NavList groups={mainGroups} url={url} collapsed={collapsed} />
+                    </div>
+
+                    <div className={`flex flex-none flex-col gap-2 border-t border-line py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+                        {pinned && <NavList groups={[pinned]} url={url} collapsed={collapsed} />}
+                        {props.auth && <AccountMenu variant={collapsed ? 'rail' : 'sidebar'} />}
                     </div>
                 </aside>
 
                 <div className="flex min-h-dvh min-w-0 flex-col md:h-full md:min-h-0 md:overflow-y-auto">
-                    <TopBar />
+                    <MobileTopBar title={title} />
                     {props.auth?.imposter && <ImposterBanner name={props.auth.imposter.actor_name} actingAs={props.auth.user.name} />}
-                    <main id="main" className="flex-1 px-4 pt-5 pb-6 sm:px-6 sm:pt-6 md:px-8">
-                        {props.flash.status && (
-                            <Notice tone="success" className="mb-5">
-                                {props.flash.status}
-                            </Notice>
-                        )}
-                        {children}
+                    <main id="main" className="flex-1 px-4 pt-5 pb-10 sm:px-6 sm:pt-7 lg:px-10 lg:pt-9">
+                        <div className="w-full max-w-[1280px]">
+                            <SectionHeader groups={nav} url={url} />
+                            {props.flash.status && (
+                                <Notice tone="success" className="mb-5">
+                                    {props.flash.status}
+                                </Notice>
+                            )}
+                            {children}
+                        </div>
                     </main>
                     <AppFooter />
                 </div>
@@ -154,22 +143,22 @@ export default function AppShell({ title, children }: Props) {
 
             {flat.length > 0 && (
                 <nav aria-label={t('common.nav.main')} className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-                    <ul className="grid grid-cols-5">
+                    <ul className="m-0 grid list-none grid-cols-5 p-0">
                         {bottomItems.map((item) => {
                             const Icon = navIcons[item.key];
-                            const current = isCurrent(url, item.href);
+                            const current = itemIsCurrent(url, item);
                             return (
                                 <li key={item.key}>
                                     <Link
                                         href={item.href}
                                         aria-current={current ? 'page' : undefined}
-                                        className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[11px] font-semibold sm:text-xs ${current ? 'text-ink' : 'text-muted'}`}
+                                        className={`flex min-h-[60px] flex-col items-center justify-center gap-1 px-0.5 text-center text-[11px] font-semibold sm:text-xs ${current ? 'text-ink' : 'text-muted'}`}
                                     >
-                                        <span className="relative">
+                                        <span className={`relative ${current ? 'text-heading' : ''}`}>
                                             {Icon && <Icon weight={current ? 'fill' : 'bold'} size={22} aria-hidden />}
-                                            <NavBadge itemKey={item.key} className="absolute -top-2 left-3.5" />
+                                            <CountBadge count={badgeCount(item, badges)} className="absolute -top-2 left-3.5" />
                                         </span>
-                                        <span className="max-w-full truncate px-0.5 leading-tight">{t(`common.nav.${item.key}`)}</span>
+                                        <span className="max-w-full truncate px-0.5 leading-tight">{shortLabel(t, item.key)}</span>
                                     </Link>
                                 </li>
                             );
@@ -179,13 +168,11 @@ export default function AppShell({ title, children }: Props) {
                                 type="button"
                                 onClick={() => setMenuOpen(true)}
                                 aria-haspopup="dialog"
-                                className="flex min-h-[56px] w-full flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-muted sm:text-xs"
+                                className="flex min-h-[60px] w-full cursor-pointer flex-col items-center justify-center gap-1 text-[11px] font-semibold text-muted sm:text-xs"
                             >
                                 <span className="relative">
-                                    <DotsNine weight="bold" size={22} aria-hidden />
-                                    {menuOnlyItems.map((item) => (
-                                        <NavBadge key={item.key} itemKey={item.key} className="absolute -top-2 left-3.5" />
-                                    ))}
+                                    <List weight="bold" size={22} aria-hidden />
+                                    <CountBadge count={menuCount} className="absolute -top-2 left-3.5" />
                                 </span>
                                 {t('common.nav.menu')}
                             </button>
@@ -207,35 +194,115 @@ function BrandLogo({ brand, size }: { brand: Brand; size: number }) {
     return <img src={brand.logo_url} alt="" width={size} height={size} className="flex-none rounded-[6px] bg-white object-contain" style={{ width: size, height: size }} />;
 }
 
-function Brand({ collapsed }: { collapsed?: boolean }) {
+function BrandLink({ collapsed }: { collapsed?: boolean }) {
     const brand = usePage<SharedProps>().props.app.brand;
 
-    if (collapsed) {
-        return (
-            <Link href={route('my-day')} className="inline-flex rounded-sm p-1" aria-label={brand.name}>
-                <BrandLogo brand={brand} size={36} />
-            </Link>
-        );
-    }
-
     return (
-        <Link href={route('my-day')} className="flex min-w-0 items-center gap-2.5 rounded-sm px-2 py-1">
-            <BrandLogo brand={brand} size={36} />
-            <span className="truncate font-display text-[18px] font-[750] tracking-[-0.01em] text-heading xl:text-[19px]">{brand.name}</span>
+        <Link href={route('my-day')} className={`flex min-w-0 items-center gap-2.5 rounded-sm py-1 ${collapsed ? 'p-1' : 'px-1.5'}`} aria-label={collapsed ? brand.name : undefined}>
+            <BrandLogo brand={brand} size={34} />
+            {!collapsed && <span className="truncate font-display text-[18px] font-[750] tracking-[-0.01em] text-heading">{brand.name}</span>}
         </Link>
     );
 }
 
-function SidebarFooter() {
-    const t = useT();
-    const brand = usePage<SharedProps>().props.app.brand;
-    const year = new Date().getFullYear();
+/** Slim bar on phones: where you are, the running timer, and the account. Wide screens have no top bar. */
+function MobileTopBar({ title }: { title: string }) {
+    const { props } = usePage<SharedProps>();
 
     return (
-        <div className="mt-2 px-2.5 pb-1">
-            <p className="m-0 truncate text-[12px] font-semibold text-ink">{brand.name}</p>
-            <p className="m-0 mt-0.5 truncate text-[11px] text-muted">{t('common.shell.footer_copy', { year, studio: brand.studio })}</p>
-        </div>
+        <header className="sticky top-0 z-20 flex h-14 flex-none items-center gap-2.5 border-b border-line bg-paper pr-2 pl-4 md:hidden">
+            <OwlEyes state="open" size={32} />
+            <span className="min-w-0 flex-1 truncate font-display text-[18px] font-bold text-heading">{title}</span>
+            {props.task_timer && <TimerChip timer={props.task_timer} />}
+            {props.auth && <AccountMenu variant="top" />}
+        </header>
+    );
+}
+
+function useTimerLabel(timer: TaskTimer) {
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const id = window.setInterval(() => setNow(Date.now()), 30_000);
+        return () => window.clearInterval(id);
+    }, []);
+
+    const minutes = Math.max(0, Math.floor((now - new Date(timer.started_at).getTime()) / 60_000));
+    return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** Running task timer on every page, so a forgotten timer gets noticed. Opens the task. */
+function TimerCard({ timer, collapsed }: { timer: TaskTimer; collapsed: boolean }) {
+    const t = useT();
+    const label = useTimerLabel(timer);
+
+    return (
+        <Link
+            href={route('tasks.show', timer.task_id)}
+            className={`flex min-h-11 items-center rounded-md border border-line bg-surface hover:border-line-strong ${collapsed ? 'flex-col justify-center gap-0.5 px-1 py-2' : 'gap-3 px-3 py-2.5'}`}
+            title={timer.task_title}
+            aria-label={t('common.shell.timer_label', { task: timer.task_title, time: label })}
+        >
+            <Timer weight="bold" size={18} aria-hidden className="flex-none text-teal-text" />
+            {collapsed ? (
+                <span className="num text-[13px] font-semibold">{label}</span>
+            ) : (
+                <span className="flex min-w-0 flex-col">
+                    <span className="num leading-tight font-semibold">{label}</span>
+                    <span className="truncate text-[13px] text-muted">{timer.task_title}</span>
+                </span>
+            )}
+        </Link>
+    );
+}
+
+function TimerChip({ timer }: { timer: TaskTimer }) {
+    const t = useT();
+    const label = useTimerLabel(timer);
+
+    return (
+        <Link
+            href={route('tasks.show', timer.task_id)}
+            className="num inline-flex min-h-11 flex-none items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 text-sm font-semibold"
+            title={timer.task_title}
+            aria-label={t('common.shell.timer_label', { task: timer.task_title, time: label })}
+        >
+            <Timer weight="bold" size={16} aria-hidden className="text-teal-text" />
+            {label}
+        </Link>
+    );
+}
+
+/** Tabs of the open section (Persetujuan, Pantauan), or the way back to the Pengaturan page from one of its pages. */
+function SectionHeader({ groups, url }: { groups: NavGroup[]; url: string }) {
+    const t = useT();
+    const badges = useBadges();
+    const section = currentSection(groups, url);
+
+    if (!section?.children) return null;
+
+    if (section.key === 'settings') {
+        return (
+            <p className="m-0 mb-3 text-sm">
+                <Link href={section.href} className="link">
+                    {t('common.nav.settings')}
+                </Link>
+            </p>
+        );
+    }
+
+    if (section.children.length < 2) return null;
+    const open = currentChild(section, url);
+
+    return (
+        <nav aria-label={t(`common.nav.${section.key}`)} className="tabbar mb-6">
+            {section.children.map((child) => (
+                <Link key={child.key} href={child.href} aria-current={open?.key === child.key ? 'page' : undefined}>
+                    {t(`common.nav.tabs.${child.key}`)}
+                    <CountBadge count={badges[child.key] ?? 0} />
+                </Link>
+            ))}
+        </nav>
     );
 }
 
@@ -247,35 +314,27 @@ function AppFooter() {
     const hasLink = brand.footer_link_label !== '' && brand.footer_link_url !== '';
 
     return (
-        <footer className="mt-auto border-t border-line px-4 pt-4 pb-[calc(1rem+56px+env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:py-5">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <p className="m-0 text-sm font-semibold text-ink">
-                    {brand.name}
-                    <span className="font-normal text-muted">
-                        {` · ${brand.studio}`}
-                        {(brand.footer_text !== '' || hasLink) && ' · '}
-                        {brand.footer_text}
-                        {hasLink && (
-                            <>
-                                {brand.footer_text !== '' && ' '}
-                                <a href={brand.footer_link_url} target="_blank" rel="noopener noreferrer" className="link">
-                                    {brand.footer_link_label}
-                                </a>
-                            </>
-                        )}
-                    </span>
-                </p>
-                <p className="m-0 text-[13px] text-muted">
-                    {brand.contact_email !== '' && (
+        <footer className="mt-auto border-t border-line px-4 pt-4 pb-[calc(1rem+60px+env(safe-area-inset-bottom))] text-[13px] text-muted sm:px-6 md:py-4 lg:px-10">
+            <div className="flex max-w-[1280px] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <p className="m-0">
+                    {t('common.shell.footer_copy', { year, studio: brand.studio })}
+                    {brand.footer_text !== '' && ` · ${brand.footer_text}`}
+                    {hasLink && (
                         <>
-                            <a href={`mailto:${brand.contact_email}`} className="link">
-                                {brand.contact_email}
+                            {brand.footer_text !== '' ? ' ' : ' · '}
+                            <a href={brand.footer_link_url} target="_blank" rel="noopener noreferrer" className="link">
+                                {brand.footer_link_label}
                             </a>
-                            {' · '}
                         </>
                     )}
-                    {t('common.shell.footer_copy', { year, studio: brand.studio })}
                 </p>
+                {brand.contact_email !== '' && (
+                    <p className="m-0">
+                        <a href={`mailto:${brand.contact_email}`} className="link">
+                            {brand.contact_email}
+                        </a>
+                    </p>
+                )}
             </div>
         </footer>
     );
@@ -286,7 +345,7 @@ function ImposterBanner({ name, actingAs }: { name: string; actingAs: string }) 
     const [working, setWorking] = useState(false);
 
     return (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-gold px-4 py-2.5 text-[#1A1A2E] sm:px-8" role="status">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-gold px-4 py-2.5 text-[#1A1A2E] sm:px-6 lg:px-10" role="status">
             <p className="m-0 text-sm font-semibold">
                 {t('common.shell.imposter_banner', { name: actingAs })}
                 <span className="font-normal"> ({name})</span>
@@ -306,8 +365,7 @@ function ImposterBanner({ name, actingAs }: { name: string; actingAs: string }) 
     );
 }
 
-function NavBadge({ itemKey, className = '' }: { itemKey: string; className?: string }) {
-    const count = usePage<SharedProps>().props.nav_badges?.[itemKey] ?? 0;
+function CountBadge({ count, className = '' }: { count: number; className?: string }) {
     const t = useT();
 
     if (count <= 0) return null;
@@ -317,206 +375,132 @@ function NavBadge({ itemKey, className = '' }: { itemKey: string; className?: st
             <span aria-hidden className="num inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-gold px-1.5 text-xs leading-none font-bold text-[#1A1A2E]">
                 {count > 99 ? '99+' : count}
             </span>
-            <span className="sr-only">{t(`${itemKey}.nav_badge`, { count })}</span>
-        </span>
-    );
-}
-
-function NavList({ groups, url, compact = false, collapsed = false }: { groups: NavGroup[]; url: string; compact?: boolean; collapsed?: boolean }) {
-    const t = useT();
-    const baseId = useId();
-    const foldable = !collapsed && groups.reduce((sum, group) => sum + group.items.length, 0) > FOLD_ABOVE;
-    const activeGroup = groups.find((group) => group.items.some((item) => isCurrent(url, item.href)))?.group;
-    // The shell mounts again on every visit, so the group of the current page opens each time
-    const [open, setOpen] = useState<Record<string, boolean>>(() => (activeGroup ? { ...readNavOpen(), [activeGroup]: true } : readNavOpen()));
-
-    const isOpen = (group: string) => !foldable || (open[group] ?? OPEN_BY_DEFAULT.includes(group));
-    const toggle = (group: string) =>
-        setOpen((prev) => {
-            const next = { ...prev, [group]: !isOpen(group) };
-            writeNavOpen(next);
-            return next;
-        });
-
-    return (
-        <nav aria-label={t('common.nav.main')} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
-            {groups.map((group, index) => {
-                const label = t(`common.nav.groups.${group.group}`);
-                const listId = `${baseId}-${group.group}`;
-                const shown = isOpen(group.group);
-
-                return (
-                    <div key={group.group} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
-                        {collapsed ? (
-                            index > 0 ? <div className="my-1.5 border-t border-line" role="separator" /> : null
-                        ) : foldable ? (
-                            <button
-                                type="button"
-                                aria-expanded={shown}
-                                aria-controls={listId}
-                                onClick={() => toggle(group.group)}
-                                className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 text-left font-semibold text-muted hover:text-ink ${
-                                    compact ? 'mt-1.5 min-h-9 text-[12px]' : 'mt-2 min-h-11 text-[13px]'
-                                }`}
-                            >
-                                <span className="min-w-0 flex-1 truncate">{label}</span>
-                                {!shown && <GroupBadge items={group.items} />}
-                                <CaretDown weight="bold" size={14} aria-hidden className={`flex-none transition-transform duration-150 ${shown ? '' : '-rotate-90'}`} />
-                            </button>
-                        ) : (
-                            <p className={`m-0 px-2.5 font-semibold text-muted ${compact ? 'pt-2.5 pb-1 text-[12px]' : 'pt-3.5 pb-1.5 text-[13px]'}`}>{label}</p>
-                        )}
-                        {shown && (
-                            <div id={listId} className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1'}`}>
-                                {group.items.map((item) => {
-                                    const Icon = navIcons[item.key];
-                                    const itemLabel = t(`common.nav.${item.key}`);
-                                    return (
-                                        <Link
-                                            key={item.key}
-                                            href={item.href}
-                                            className={`nav-item ${compact ? 'nav-item--compact' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
-                                            aria-current={isCurrent(url, item.href) ? 'page' : undefined}
-                                            aria-label={collapsed ? itemLabel : undefined}
-                                            title={collapsed ? itemLabel : undefined}
-                                        >
-                                            {Icon && <Icon weight="bold" size={collapsed ? 20 : compact ? 17 : 18} aria-hidden />}
-                                            {!collapsed && <span className="min-w-0 truncate">{itemLabel}</span>}
-                                            {!collapsed && <NavBadge itemKey={item.key} className="ml-auto" />}
-                                            {collapsed && <NavBadge itemKey={item.key} className="absolute top-0.5 right-0.5 scale-90" />}
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
-        </nav>
-    );
-}
-
-/** On a folded group: the sum of its items' badges, so waiting approvals never hide behind a fold. */
-function GroupBadge({ items }: { items: NavGroup['items'] }) {
-    const badges = usePage<SharedProps>().props.nav_badges ?? {};
-    const t = useT();
-    const count = items.reduce((sum, item) => sum + (badges[item.key] ?? 0), 0);
-
-    if (count <= 0) return null;
-
-    return (
-        <span className="inline-flex">
-            <span aria-hidden className="num inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-gold px-1.5 text-xs leading-none font-bold text-[#1A1A2E]">
-                {count > 99 ? '99+' : count}
-            </span>
             <span className="sr-only">{t('common.nav.group_badge', { count })}</span>
         </span>
     );
 }
 
-function TopBar() {
-    const { props } = usePage<SharedProps>();
+function NavList({ groups, url, collapsed = false, large = false }: { groups: NavGroup[]; url: string; collapsed?: boolean; large?: boolean }) {
     const t = useT();
-    const locale = useLocale();
-    const user = props.auth?.user;
-    const today = todayInStudio(props.app.timezone);
+    const badges = useBadges();
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 flex-none items-center justify-between gap-3 border-b border-line bg-paper px-4 sm:h-16 sm:px-6 md:px-8">
-            <div className="flex min-w-0 items-center gap-2.5">
-                <span className="md:hidden">
-                    <OwlEyes state="open" size={34} />
-                </span>
-                <span className="truncate text-sm font-semibold sm:text-base">{formatLongDate(today, locale)}</span>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-3.5">
-                {props.task_timer && <TimerChip timer={props.task_timer} />}
-                <LocaleSwitch />
-                <ThemeToggle />
-                {user && <AccountMenu />}
-            </div>
-        </header>
-    );
-}
-
-/** Running task timer on every page, so a forgotten timer gets noticed. Opens the task. */
-function TimerChip({ timer }: { timer: TaskTimer }) {
-    const t = useT();
-    const [now, setNow] = useState(() => Date.now());
-
-    useEffect(() => {
-        const id = window.setInterval(() => setNow(Date.now()), 30_000);
-        return () => window.clearInterval(id);
-    }, []);
-
-    const minutes = Math.max(0, Math.floor((now - new Date(timer.started_at).getTime()) / 60_000));
-    const label = `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
-
-    return (
-        <Link
-            href={route('tasks.show', timer.task_id)}
-            className="chip chip-pending num min-h-[40px] max-w-[46vw] sm:max-w-[260px]"
-            title={timer.task_title}
-            aria-label={t('common.shell.timer_label', { task: timer.task_title, time: label })}
-        >
-            <Timer weight="bold" size={16} aria-hidden className="flex-none" />
-            <span className="flex-none">{label}</span>
-            <span className="hidden min-w-0 truncate lg:inline">{timer.task_title}</span>
-        </Link>
-    );
-}
-
-function LocaleSwitch() {
-    const t = useT();
-    const locale = useLocale();
-
-    const choose = (value: 'id' | 'en') => {
-        if (value !== locale) router.patch(route('preferences.update'), { locale: value }, { preserveScroll: true });
-    };
-
-    return (
-        <div className="seg" role="group" aria-label={t('common.shell.language')}>
-            <button type="button" aria-pressed={locale === 'id'} onClick={() => choose('id')} lang="id">
-                ID
-            </button>
-            <button type="button" aria-pressed={locale === 'en'} onClick={() => choose('en')} lang="en">
-                EN
-            </button>
+        <div className="flex flex-col gap-0.5">
+            {groups.map((group, index) => (
+                <div key={group.group} className="flex flex-col gap-0.5">
+                    {collapsed
+                        ? index > 0 && <div className="mx-2 my-2 border-t border-line" role="separator" />
+                        : group.group !== PINNED_GROUP || large
+                          ? (
+                                <p className={`m-0 px-2.5 pb-1 text-[13px] font-semibold text-muted ${index === 0 ? 'pt-1' : 'pt-4'}`}>{t(`common.nav.groups.${group.group}`)}</p>
+                            )
+                          : null}
+                    {group.items.map((item) => (
+                        <NavLink key={item.key} item={item} url={url} collapsed={collapsed} large={large} count={badgeCount(item, badges)} />
+                    ))}
+                </div>
+            ))}
         </div>
     );
 }
 
-function ThemeToggle() {
+function NavLink({ item, url, collapsed, large, count }: { item: NavItem; url: string; collapsed: boolean; large: boolean; count: number }) {
     const t = useT();
-    const pref = usePage<SharedProps>().props.auth?.user.theme ?? 'system';
-    const [current, setCurrent] = useState<'light' | 'dark'>('light');
-
-    useEffect(() => setCurrent(effectiveTheme(pref)), [pref]);
-
-    const next = current === 'dark' ? 'light' : 'dark';
+    const Icon = navIcons[item.key];
+    const label = t(`common.nav.${item.key}`);
 
     return (
-        <button
-            type="button"
-            onClick={() => {
-                setCurrent(next);
-                saveTheme(next);
-            }}
-            aria-label={t(next === 'dark' ? 'common.shell.switch_to_dark' : 'common.shell.switch_to_light')}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-sm px-2 text-sm font-semibold hover:bg-panel"
+        <Link
+            href={item.href}
+            className={`nav-item ${large ? '' : 'nav-item--compact'} ${collapsed ? 'justify-center px-0' : ''}`}
+            aria-current={itemIsCurrent(url, item) ? 'page' : undefined}
+            aria-label={collapsed ? label : undefined}
+            title={collapsed ? label : undefined}
         >
-            {current === 'dark' ? <Moon weight="bold" size={18} aria-hidden /> : <Sun weight="bold" size={18} aria-hidden />}
-            <span className="hidden sm:inline">{t(current === 'dark' ? 'common.shell.theme_dark' : 'common.shell.theme_light')}</span>
-        </button>
+            {Icon && <Icon weight="bold" size={collapsed ? 20 : 18} aria-hidden />}
+            {!collapsed && <span className="min-w-0 truncate">{label}</span>}
+            {!collapsed && <CountBadge count={count} className="ml-auto" />}
+            {collapsed && <CountBadge count={count} className="absolute top-0.5 right-0.5 scale-90" />}
+        </Link>
     );
 }
 
-function AccountMenu() {
+/** Language and theme: set once, so they live in the account menu instead of on every page. */
+function Preferences() {
+    const t = useT();
+    const locale = useLocale();
+    const pref = usePage<SharedProps>().props.auth?.user.theme ?? 'system';
+
+    const chooseLocale = (value: 'id' | 'en') => {
+        if (value !== locale) router.patch(route('preferences.update'), { locale: value }, { preserveScroll: true });
+    };
+    const themes: ThemePreference[] = ['light', 'dark', 'system'];
+
+    return (
+        <div className="flex flex-col gap-3 px-2.5 py-2">
+            <div className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-muted">{t('common.shell.language')}</span>
+                <div className="seg self-start" role="group" aria-label={t('common.shell.language')}>
+                    <button type="button" aria-pressed={locale === 'id'} onClick={() => chooseLocale('id')} lang="id">
+                        Indonesia
+                    </button>
+                    <button type="button" aria-pressed={locale === 'en'} onClick={() => chooseLocale('en')} lang="en">
+                        English
+                    </button>
+                </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-muted">{t('common.shell.theme')}</span>
+                <div className="seg self-start" role="group" aria-label={t('common.shell.theme')}>
+                    {themes.map((value) => (
+                        <button key={value} type="button" aria-pressed={pref === value} onClick={() => pref !== value && saveTheme(value)}>
+                            {t(`common.shell.theme_${value}`)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AccountLinks({ onPick }: { onPick?: () => void }) {
+    const t = useT();
+
+    return (
+        <>
+            <Link href={route('profile.edit')} className="nav-item" onClick={onPick}>
+                <UserCircle weight="bold" size={18} aria-hidden />
+                {t('common.shell.profile')}
+            </Link>
+            <Link href={route('password.edit')} className="nav-item" onClick={onPick}>
+                <Key weight="bold" size={18} aria-hidden />
+                {t('common.shell.change_password')}
+            </Link>
+        </>
+    );
+}
+
+function SignOutLink() {
+    const t = useT();
+
+    return (
+        <Link href={route('sign-out')} method="post" as="button" className="nav-item w-full cursor-pointer text-left">
+            <SignOut weight="bold" size={18} aria-hidden />
+            {t('common.shell.sign_out')}
+        </Link>
+    );
+}
+
+/**
+ * The account: profile, password, language, theme, sign out. A disclosure (button + panel), closed with Escape or a
+ * click outside; focus goes into the panel on open and back to the button on Escape.
+ */
+function AccountMenu({ variant }: { variant: 'sidebar' | 'rail' | 'top' }) {
     const { props } = usePage<SharedProps>();
     const t = useT();
     const user = props.auth!.user;
     const [open, setOpen] = useState(false);
-    const menuId = useId();
+    const panelId = useId();
     const wrapper = useRef<HTMLDivElement>(null);
     const trigger = useRef<HTMLButtonElement>(null);
 
@@ -533,48 +517,55 @@ function AccountMenu() {
         };
         document.addEventListener('keydown', onKey);
         document.addEventListener('mousedown', onClick);
-        wrapper.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+        wrapper.current?.querySelector<HTMLElement>(`#${CSS.escape(panelId)} a, #${CSS.escape(panelId)} button`)?.focus();
         return () => {
             document.removeEventListener('keydown', onKey);
             document.removeEventListener('mousedown', onClick);
         };
-    }, [open]);
+    }, [open, panelId]);
+
+    const panelPlace = variant === 'top' ? 'top-full right-0 mt-2' : variant === 'rail' ? 'bottom-0 left-full ml-3' : 'bottom-full left-0 mb-2';
 
     return (
         <div ref={wrapper} className="relative">
             <button
                 ref={trigger}
                 type="button"
-                className="avatar min-h-[40px] min-w-[40px] cursor-pointer"
-                aria-haspopup="menu"
+                className={
+                    variant === 'sidebar'
+                        ? 'flex min-h-[52px] w-full cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-surface'
+                        : 'inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full'
+                }
                 aria-expanded={open}
-                aria-controls={menuId}
-                aria-label={t('common.shell.account')}
+                aria-controls={panelId}
+                aria-label={variant === 'sidebar' ? undefined : t('common.shell.account')}
                 onClick={() => setOpen((v) => !v)}
             >
-                {user.photo_url ? <img src={user.photo_url} alt="" className="size-full rounded-full object-cover" /> : user.initials}
+                <Avatar initials={user.initials} photoUrl={user.photo_url} className={variant === 'sidebar' ? 'h-9 w-9' : 'h-10 w-10'} />
+                {variant === 'sidebar' && (
+                    <>
+                        <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate text-[14px] leading-tight font-semibold">{user.display_name}</span>
+                            <span className="truncate text-[13px] text-muted">{user.username}</span>
+                        </span>
+                        <CaretUpDown weight="bold" size={16} aria-hidden className="flex-none text-muted" />
+                    </>
+                )}
             </button>
             {open && (
-                <div id={menuId} role="menu" className="floating absolute top-12 right-0 z-40 w-64 rounded-md border border-line bg-surface p-2">
-                    <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                <div id={panelId} className={`floating absolute z-40 w-[280px] max-w-[calc(100vw-24px)] rounded-md border border-line bg-surface p-2 ${panelPlace}`}>
+                    <div className="flex items-center gap-3 px-2.5 pt-1.5 pb-3">
                         <Avatar initials={user.initials} photoUrl={user.photo_url} className="h-10 w-10" />
                         <div className="min-w-0">
                             <p className="m-0 truncate font-semibold">{user.display_name}</p>
                             <p className="m-0 truncate text-[13px] text-muted">{t('common.shell.signed_in_as', { username: user.username })}</p>
                         </div>
                     </div>
-                    <Link href={route('profile.edit')} role="menuitem" className="nav-item text-[15px]" onClick={() => setOpen(false)}>
-                        <UserCircle weight="bold" size={18} aria-hidden />
-                        {t('common.shell.profile')}
-                    </Link>
-                    <Link href={route('password.edit')} role="menuitem" className="nav-item text-[15px]" onClick={() => setOpen(false)}>
-                        <Key weight="bold" size={18} aria-hidden />
-                        {t('common.shell.change_password')}
-                    </Link>
-                    <Link href={route('sign-out')} method="post" as="button" role="menuitem" className="nav-item w-full cursor-pointer text-left">
-                        <SignOut weight="bold" size={18} aria-hidden />
-                        {t('common.shell.sign_out')}
-                    </Link>
+                    <AccountLinks onPick={() => setOpen(false)} />
+                    <div className="my-1.5 border-t border-line" />
+                    <Preferences />
+                    <div className="my-1.5 border-t border-line" />
+                    <SignOutLink />
                 </div>
             )}
         </div>
@@ -585,8 +576,6 @@ function MobileMenu({ groups, url, onClose }: { groups: NavGroup[]; url: string;
     const t = useT();
     const ref = useRef<HTMLDialogElement>(null);
     const titleId = useId();
-    const studio = usePage<SharedProps>().props.app.brand.studio;
-    const year = new Date().getFullYear();
 
     useEffect(() => {
         ref.current?.showModal();
@@ -597,32 +586,21 @@ function MobileMenu({ groups, url, onClose }: { groups: NavGroup[]; url: string;
             ref={ref}
             aria-labelledby={titleId}
             onClose={onClose}
-            className="m-0 mt-auto h-auto max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border-0 bg-surface p-4 pb-[calc(16px+env(safe-area-inset-bottom))] text-ink backdrop:bg-[rgb(16_18_31/0.55)]"
+            className="m-0 mt-auto h-auto max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border-0 bg-surface px-4 pt-4 pb-[calc(20px+env(safe-area-inset-bottom))] text-ink backdrop:bg-[rgb(16_18_31/0.55)]"
         >
-            <div className="mb-2 flex items-center justify-between">
-                <h2 id={titleId} className="h2">
+            <div className="mb-1 flex items-center justify-between">
+                <h2 id={titleId} className="font-display text-[20px] font-bold text-heading">
                     {t('common.nav.menu')}
                 </h2>
-                <button type="button" onClick={onClose} className="btn btn-secondary btn-sm min-h-11 min-w-11" aria-label={t('common.nav.close_menu')}>
+                <button type="button" onClick={onClose} className="btn btn-secondary btn-sm min-h-11 min-w-11 px-0" aria-label={t('common.nav.close_menu')}>
                     <X weight="bold" size={16} aria-hidden />
                 </button>
             </div>
-            <NavList groups={groups} url={url} />
-            <div className="mt-3 border-t border-line pt-3">
-                <Link href={route('profile.edit')} className="nav-item">
-                    <UserCircle weight="bold" size={18} aria-hidden />
-                    {t('common.shell.profile')}
-                </Link>
-                <Link href={route('password.edit')} className="nav-item">
-                    <Key weight="bold" size={18} aria-hidden />
-                    {t('common.shell.change_password')}
-                </Link>
-                <Link href={route('sign-out')} method="post" as="button" className="nav-item w-full cursor-pointer text-left">
-                    <SignOut weight="bold" size={18} aria-hidden />
-                    {t('common.shell.sign_out')}
-                </Link>
-            </div>
-            <p className="m-0 mt-4 text-center text-[12px] text-muted">{t('common.shell.footer_copy', { year, studio })}</p>
+            <NavList groups={groups} url={url} large />
+            <p className="m-0 px-2.5 pt-4 pb-1 text-[13px] font-semibold text-muted">{t('common.shell.account')}</p>
+            <AccountLinks />
+            <Preferences />
+            <SignOutLink />
         </dialog>
     );
 }
