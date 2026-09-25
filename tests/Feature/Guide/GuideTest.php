@@ -16,6 +16,6 @@ test('a guest is sent to sign in', function () {
 
 test('the guide is in the menu of every person', function () {
     $this->actingAs(userWithRole(Role::Superadmin))->get(route('guide.index'))
-        ->assertInertia(fn ($page) => $page->where('nav', fn ($groups) => collect($groups)->last()['group'] === 'help'
-            && collect($groups)->last()['items'][0]['key'] === 'guide'));
+        ->assertInertia(fn ($page) => $page->where('nav', fn ($groups) => collect($groups)->last()['group'] === 'more'
+            && collect(collect($groups)->last()['items'])->last()['key'] === 'guide'));
 });

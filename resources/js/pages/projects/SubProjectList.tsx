@@ -35,7 +35,7 @@ export function SubProjectList({ projectId, items, canManage }: { projectId: num
                                 <Link href={route('projects.sub.show', [projectId, sub.id])} className="font-semibold break-words text-ink hover:underline" aria-label={t('tasks.sub.open', { name: sub.name })}>
                                     {sub.name}
                                 </Link>
-                                {sub.status !== 'active' && <span className="chip">{t(`projects.status.${sub.status}`)}</span>}
+                                {sub.status !== 'active' && <span className="chip chip-info">{t(`projects.status.${sub.status}`)}</span>}
                                 {(sub.tasks_waiting ?? 0) > 0 && <span className="chip chip-pending num">{t('tasks.sub.waiting', { count: sub.tasks_waiting ?? 0 })}</span>}
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
@@ -46,14 +46,14 @@ export function SubProjectList({ projectId, items, canManage }: { projectId: num
                         <div className="flex w-full flex-col gap-1.5 sm:w-[220px] sm:flex-none">
                             <span className="num text-sm">{t('tasks.sub.progress', { done, total })}</span>
                             <div
-                                className="h-2 overflow-hidden rounded-md bg-panel"
+                                className="meter"
                                 role="progressbar"
                                 aria-valuemin={0}
                                 aria-valuemax={total}
                                 aria-valuenow={done}
                                 aria-label={t('tasks.sub.progress', { done, total })}
                             >
-                                <span className="block h-full rounded-md bg-[var(--eye-brow)]" style={{ width: `${percent}%` }} />
+                                <span style={{ width: `${percent}%` }} />
                             </div>
                         </div>
                     </li>

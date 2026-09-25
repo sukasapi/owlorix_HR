@@ -1,6 +1,12 @@
 export default {
     nav: {
-        groups: { my_work: 'Kerja saya', team: 'Tim', production: 'Produksi', people: 'Orang & akses', admin: 'Pengaturan', oversight: 'Pantauan', help: 'Bantuan' },
+        groups: { my_work: 'Kerja saya', team: 'Tim', production: 'Produksi', more: 'Lainnya' },
+        settings: 'Pengaturan',
+        // Phone bottom bar: five items share 320px, so long names get a short form
+        short: { my_tasks: 'Tugas', approvals: 'Setujui', team_today: 'Tim', leave: 'Cuti', activity_log: 'Log', monitoring: 'Pantau', settings: 'Atur' },
+        monitoring: 'Pantauan',
+        app_usage: 'Aktivitas detail',
+        tabs: { approvals: 'Lembur', leave_approvals: 'Cuti & izin', corrections: 'Koreksi', work_monitor: 'Monitor kerja', workload: 'Beban kerja', app_usage: 'Aktivitas detail' },
         my_day: 'Hari ini',
         history: 'Riwayat',
         overtime: 'Lembur',
@@ -29,15 +35,15 @@ export default {
         activity_monitor: 'Monitor aktivitas',
         menu: 'Menu',
         main: 'Navigasi utama',
-        group_badge: ':count menunggu di grup ini',
+        group_badge: ':count menunggu',
         close_menu: 'Tutup menu',
     },
     shell: {
         language: 'Bahasa',
         theme_light: 'Terang',
         theme_dark: 'Gelap',
-        switch_to_dark: 'Ganti ke tema gelap',
-        switch_to_light: 'Ganti ke tema terang',
+        theme_system: 'Ikut sistem',
+        theme: 'Tema',
         account: 'Akun',
         change_password: 'Ganti kata sandi',
         sign_out: 'Keluar dari web',

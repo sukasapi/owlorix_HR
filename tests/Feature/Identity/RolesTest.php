@@ -39,7 +39,8 @@ it('shows only navigation items whose page exists and the person may open', func
             // Produksi shows only the project list an employee may read; no team, management or admin pages
             ->where('nav.1.group', 'production')
             ->where('nav.1.items', fn ($items) => collect($items)->pluck('key')->all() === ['projects'])
-            ->where('nav.2.group', 'help')
-            ->where('nav.2.items.0.key', 'guide')
+            // The pinned group holds only Panduan: no Pengaturan without an admin page to open
+            ->where('nav.2.group', 'more')
+            ->where('nav.2.items', fn ($items) => collect($items)->pluck('key')->all() === ['guide'])
             ->missing('nav.3'));
 });

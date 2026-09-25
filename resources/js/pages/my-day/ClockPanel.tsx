@@ -4,7 +4,7 @@ import { Notice } from '@/components/ui/Notice';
 import { formatMinutes, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
-import { ArrowsLeftRight, Bell, BellSlash, HourglassMedium, SignIn, SignOut } from '@phosphor-icons/react';
+import { ArrowsLeftRight, Bell, BellSlash, HourglassMedium, Info, SignIn, SignOut } from '@phosphor-icons/react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { type ReminderPermission, useEyesMotion, useNow } from './hooks';
 import { errorText, type Summary } from './types';
@@ -71,37 +71,37 @@ export function ClockPanel({ summary, permission, onEnableReminders, heartbeatFa
 
     return (
         <section className="brow px-5 py-6 sm:px-8 sm:py-7" aria-labelledby="today-status">
-            <div className="flex items-center gap-4">
-                <span ref={eyes} className="inline-block origin-center">
-                    <OwlEyes state={hasShifts || open ? eyesFor[summary.status] : 'closed'} size={72} />
+            <div className="flex items-center gap-3.5 sm:gap-4">
+                <span ref={eyes} className="inline-block flex-none origin-center">
+                    <OwlEyes state={hasShifts || open ? eyesFor[summary.status] : 'closed'} size={60} />
                 </span>
                 <div className="min-w-0">
-                    <h1 id="today-status" className="h2" aria-live="polite">
+                    <h2 id="today-status" className="h2" aria-live="polite">
                         {heading}
-                    </h1>
-                    {detail && <p className="num m-0 text-muted">{detail}</p>}
+                    </h2>
+                    {detail && <p className="num m-0 mt-0.5 text-muted">{detail}</p>}
                 </div>
             </div>
 
             {(hasShifts || open) && (
                 <>
-                    <p className="display num m-0 mt-5 text-[52px] text-heading sm:text-[80px]">
-                        {formatMinutes(regularMinutes, locale)}
-                        <span className="ml-2 font-sans text-lg font-semibold tracking-normal text-muted sm:text-[22px]">{t('my-day.worked_today')}</span>
+                    <p className="m-0 mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className="display num text-[44px] text-heading sm:text-[64px] xl:text-[72px]">{formatMinutes(regularMinutes, locale)}</span>
+                        <span className="text-base font-semibold text-muted sm:text-lg">{t('my-day.worked_today')}</span>
                     </p>
                     {summary.is_workday && (
                         <div
-                            className="mt-3 h-3 overflow-hidden rounded-md border border-[color-mix(in_srgb,var(--eye-brow)_35%,transparent)] bg-[color-mix(in_srgb,var(--eye-brow)_18%,transparent)]"
+                            className="meter mt-5"
                             role="progressbar"
                             aria-valuemin={0}
                             aria-valuemax={summary.regular_limit_minutes}
                             aria-valuenow={regularMinutes}
                             aria-label={t('my-day.worked_today')}
                         >
-                            <span className="block h-full rounded-md bg-[var(--eye-brow)]" style={{ width: `${progress}%` }} />
+                            <span style={{ width: `${progress}%` }} />
                         </div>
                     )}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                         <span className="num font-semibold">
                             {summary.is_workday &&
                                 (regularMinutes >= summary.regular_limit_minutes
@@ -355,32 +355,44 @@ function ClockOutAction({ overtime, reason }: { overtime: boolean; reason: strin
     );
 }
 
+/**
+ * How the web clock works: read once, so it folds away behind "Cara kerja absen dari web". Turning reminders on stays
+ * visible, because a missed 8-hour reminder costs regular time.
+ */
 function WebNotes({ rules, permission, onEnableReminders }: { rules: Summary['rules']; permission: ReminderPermission; onEnableReminders: () => void }) {
     const t = useT();
 
     return (
         <div className="mt-5 flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--eye-brow)_25%,transparent)] pt-4 text-sm">
-            <p className="m-0">{t('my-day.web.heartbeat_note', { minutes: rules.resume_window_minutes })}</p>
-            <p className="m-0">{t('my-day.web.no_idle_note', { minutes: rules.presence_check_minutes })}</p>
-            {permission === 'unsupported' && <p className="m-0">{t('my-day.reminders.unsupported')}</p>}
             {permission === 'default' && (
-                <button type="button" className="btn btn-secondary btn-sm min-h-[44px] self-start bg-surface" onClick={onEnableReminders}>
+                <button type="button" className="btn btn-secondary btn-sm min-h-11 self-start" onClick={onEnableReminders}>
                     <Bell weight="bold" size={16} aria-hidden />
                     {t('my-day.reminders.enable')}
                 </button>
             )}
-            {permission === 'granted' && (
-                <p className="m-0 flex items-center gap-1.5 font-semibold">
-                    <Bell weight="bold" size={16} aria-hidden />
-                    {t('my-day.reminders.on')}
-                </p>
-            )}
-            {permission === 'denied' && (
-                <p className="m-0 flex items-center gap-1.5">
-                    <BellSlash weight="bold" size={16} aria-hidden />
-                    {t('my-day.reminders.blocked')}
-                </p>
-            )}
+            <details>
+                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-semibold text-teal-text [&::-webkit-details-marker]:hidden">
+                    <Info weight="bold" size={16} aria-hidden />
+                    <span className="underline underline-offset-[3px]">{t('my-day.web.how_it_works')}</span>
+                </summary>
+                <div className="flex max-w-[64ch] flex-col gap-2 pt-1 pb-1">
+                    <p className="m-0">{t('my-day.web.heartbeat_note', { minutes: rules.resume_window_minutes })}</p>
+                    <p className="m-0">{t('my-day.web.no_idle_note', { minutes: rules.presence_check_minutes })}</p>
+                    {permission === 'unsupported' && <p className="m-0">{t('my-day.reminders.unsupported')}</p>}
+                    {permission === 'granted' && (
+                        <p className="m-0 flex items-center gap-1.5 font-semibold">
+                            <Bell weight="bold" size={16} aria-hidden />
+                            {t('my-day.reminders.on')}
+                        </p>
+                    )}
+                    {permission === 'denied' && (
+                        <p className="m-0 flex items-center gap-1.5">
+                            <BellSlash weight="bold" size={16} aria-hidden />
+                            {t('my-day.reminders.blocked')}
+                        </p>
+                    )}
+                </div>
+            </details>
         </div>
     );
 }

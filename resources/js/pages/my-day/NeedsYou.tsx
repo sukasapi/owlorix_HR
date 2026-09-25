@@ -3,38 +3,85 @@ import { TextAreaField, TextField } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import { formatDateTime, formatMinutes, formatShortDate, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
-import { useForm } from '@inertiajs/react';
-import { ClockCounterClockwise, NotePencil } from '@phosphor-icons/react';
-import { type FormEvent, useId, useState } from 'react';
+import type { SharedProps } from '@/types';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import { CheckCircle, ClockCounterClockwise, NotePencil, WarningCircle } from '@phosphor-icons/react';
+import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { toStudioInput } from './hooks';
 import { errorText, type LateClaim, type ReportDue } from './types';
 
 const visit = { preserveScroll: true, only: ['summary', 'week'] };
 
 /**
- * Overtime reports still due and late claims still possible, from any device (3.4.2, 3.3.6, 3.5.5). With web
- * clock-in turned off the list stays, without the forms, because those endpoints refuse (3.11.8).
+ * Perlu kamu: everything on Hari ini that waits for this person's answer, in one list (docs/desainUI_v2). Overtime
+ * reports still due and late claims come from any device (3.4.2, 3.3.6, 3.5.5); with web clock-in turned off they
+ * stay listed without the forms, because those endpoints refuse (3.11.8). Decisions waiting in Persetujuan and in
+ * tasks are counts that link to their page.
  */
-export function FollowUps({ reports, claims, reasonMin, webEnabled }: { reports: ReportDue[]; claims: LateClaim[]; reasonMin: number; webEnabled: boolean }) {
+export function NeedsYou({ reports, claims, reasonMin, webEnabled }: { reports: ReportDue[]; claims: LateClaim[]; reasonMin: number; webEnabled: boolean }) {
     const t = useT();
-
-    if (reports.length === 0 && claims.length === 0) return null;
+    const badges = (usePage<SharedProps>().props.nav_badges ?? {}) as Record<string, number>;
+    const approvals = badges.approvals ?? 0;
+    const tasks = badges.my_tasks ?? 0;
+    const count = reports.length + claims.length + (approvals > 0 ? 1 : 0) + (tasks > 0 ? 1 : 0);
 
     return (
-        <section className="card mt-6 px-5 py-[18px]" aria-labelledby="today-follow-ups">
-            <h2 id="today-follow-ups" className="h2">
-                {t('my-day.follow_ups.heading')}
+        <section className="card px-5 pt-4 pb-1.5 sm:px-6" aria-labelledby="needs-you">
+            <h2 id="needs-you" className="h2 flex items-center gap-2">
+                {t('my-day.needs.heading')}
+                {count > 0 && <span className="num font-medium text-muted">{count}</span>}
             </h2>
-            <ul className="m-0 mt-3 list-none divide-y divide-line p-0">
-                {reports.map((report) => (
-                    <ReportItem key={`report-${report.shift_id}`} report={report} canWrite={webEnabled} />
-                ))}
-                {claims.map((claim) => (
-                    <ClaimItem key={`claim-${claim.shift_id}`} claim={claim} reasonMin={reasonMin} canWrite={webEnabled} />
-                ))}
-            </ul>
-            {!webEnabled && <p className="m-0 mt-2 text-[13px] text-muted">{t('my-day.follow_ups.desktop_only')}</p>}
+            {count === 0 ? (
+                <p className="m-0 flex items-start gap-2.5 py-4 text-muted">
+                    <CheckCircle weight="bold" size={18} aria-hidden className="mt-0.5 flex-none text-success" />
+                    {t('my-day.needs.empty')}
+                </p>
+            ) : (
+                <ul className="rows m-0 mt-1 list-none p-0">
+                    {reports.map((report) => (
+                        <ReportItem key={`report-${report.shift_id}`} report={report} canWrite={webEnabled} />
+                    ))}
+                    {claims.map((claim) => (
+                        <ClaimItem key={`claim-${claim.shift_id}`} claim={claim} reasonMin={reasonMin} canWrite={webEnabled} />
+                    ))}
+                    {approvals > 0 && <LinkItem text={t('my-day.needs.approvals', { count: approvals })} href={route('approvals.index')} />}
+                    {tasks > 0 && <LinkItem text={t('my-day.needs.tasks', { count: tasks })} href={route('projects.mine')} />}
+                </ul>
+            )}
+            {!webEnabled && reports.length + claims.length > 0 && <p className="m-0 pb-3 text-[13px] text-muted">{t('my-day.follow_ups.desktop_only')}</p>}
         </section>
+    );
+}
+
+/** One waiting thing: what it is, the detail, and the one action that answers it. */
+function Row({ title, detail, action, children }: { title: ReactNode; detail?: ReactNode; action?: ReactNode; children?: ReactNode }) {
+    return (
+        <li className="flex flex-col gap-2.5 py-3.5">
+            <span className="flex items-start gap-2.5">
+                <WarningCircle weight="bold" size={18} aria-hidden className="mt-0.5 flex-none text-gold-text" />
+                <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-semibold break-words">{title}</span>
+                    {detail && <span className="num text-sm text-muted">{detail}</span>}
+                </span>
+            </span>
+            {action && <span className="pl-7">{action}</span>}
+            {children}
+        </li>
+    );
+}
+
+function LinkItem({ text, href }: { text: string; href: string }) {
+    const t = useT();
+
+    return (
+        <Row
+            title={text}
+            action={
+                <Link href={href} className="btn btn-secondary btn-sm min-h-11">
+                    {t('my-day.needs.open')}
+                </Link>
+            }
+        />
     );
 }
 
@@ -55,21 +102,23 @@ function ReportItem({ report, canWrite }: { report: ReportDue; canWrite: boolean
     };
 
     return (
-        <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="flex flex-col gap-0.5">
-                <span className="font-semibold">{t('my-day.report.item', { date: formatShortDate(report.work_date, locale) })}</span>
-                <span className="num text-sm text-muted">
+        <Row
+            title={t('my-day.report.item', { date: formatShortDate(report.work_date, locale) })}
+            detail={
+                <>
                     {range} ({formatMinutes(report.overtime_minutes, locale)})
                     {report.status === 'needs_review' && ` · ${t('my-day.shift_flags.needs_review')}`}
-                </span>
-            </span>
-            {canWrite && (
-                <button type="button" className="btn btn-secondary btn-sm min-h-[44px] self-start sm:self-center" onClick={() => setOpen(true)}>
-                    <NotePencil weight="bold" size={16} aria-hidden />
-                    {t('my-day.report.open')}
-                </button>
-            )}
-
+                </>
+            }
+            action={
+                canWrite && (
+                    <button type="button" className="btn btn-secondary btn-sm min-h-11" onClick={() => setOpen(true)}>
+                        <NotePencil weight="bold" size={16} aria-hidden />
+                        {t('my-day.report.open')}
+                    </button>
+                )
+            }
+        >
             <Dialog open={open} onClose={() => setOpen(false)} labelledBy={titleId} closeOnBackdrop={false}>
                 <form onSubmit={submit} className="flex flex-col gap-4 px-5 py-5 sm:px-7">
                     <h2 id={titleId} className="h2">
@@ -100,7 +149,7 @@ function ReportItem({ report, canWrite }: { report: ReportDue; canWrite: boolean
                     </div>
                 </form>
             </Dialog>
-        </li>
+        </Row>
     );
 }
 
@@ -119,18 +168,18 @@ function ClaimItem({ claim, reasonMin, canWrite }: { claim: LateClaim; reasonMin
     };
 
     return (
-        <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="flex flex-col gap-0.5">
-                <span className="num font-semibold">{t(why, { time: formatTime(claim.auto_ended_at, locale) })}</span>
-                <span className="num text-sm text-muted">{t('my-day.claim.until', { time: formatDateTime(claim.claimable_until, locale) })}</span>
-            </span>
-            {canWrite && (
-                <button type="button" className="btn btn-secondary btn-sm min-h-[44px] self-start sm:self-center" onClick={() => setOpen(true)}>
-                    <ClockCounterClockwise weight="bold" size={16} aria-hidden />
-                    {t('my-day.claim.open')}
-                </button>
-            )}
-
+        <Row
+            title={t(why, { time: formatTime(claim.auto_ended_at, locale) })}
+            detail={t('my-day.claim.until', { time: formatDateTime(claim.claimable_until, locale) })}
+            action={
+                canWrite && (
+                    <button type="button" className="btn btn-secondary btn-sm min-h-11" onClick={() => setOpen(true)}>
+                        <ClockCounterClockwise weight="bold" size={16} aria-hidden />
+                        {t('my-day.claim.open')}
+                    </button>
+                )
+            }
+        >
             <Dialog open={open} onClose={() => setOpen(false)} labelledBy={titleId} closeOnBackdrop={false}>
                 <form onSubmit={submit} className="flex flex-col gap-4 px-5 py-5 sm:px-7">
                     <h2 id={titleId} className="h2">
@@ -180,6 +229,6 @@ function ClaimItem({ claim, reasonMin, canWrite }: { claim: LateClaim; reasonMin
                     </div>
                 </form>
             </Dialog>
-        </li>
+        </Row>
     );
 }

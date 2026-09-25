@@ -67,7 +67,7 @@ describe('authorization', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/audit/Index')
-                ->where('nav', fn ($nav) => collect(collect($nav)->firstWhere('group', 'oversight')['items'])->contains('key', 'audit')));
+                ->where('nav', fn ($nav) => navChildren($nav, 'settings')->contains('audit')));
     });
 
     it('refuses everyone else', function (Role $role) {

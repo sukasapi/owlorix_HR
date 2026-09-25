@@ -72,7 +72,7 @@ describe('authorization', function () {
             ->assertInertia(fn ($page) => $page
                 ->component('admin/activity/Index')
                 ->where('limits.retention_days', 365)
-                ->where('nav', fn ($nav) => collect(collect($nav)->firstWhere('group', 'oversight')['items'])->contains('key', 'activity_monitor')));
+                ->where('nav', fn ($nav) => navChildren($nav, 'settings')->contains('activity_monitor')));
     });
 
     it('refuses everyone else', function (Role $role) {

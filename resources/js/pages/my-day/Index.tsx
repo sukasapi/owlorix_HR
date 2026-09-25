@@ -1,21 +1,22 @@
 import AppShell from '@/layouts/AppShell';
-import { formatMinutes, formatTime } from '@/lib/format';
+import { formatLongDate, formatMinutes, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 import { WeekTargetCard } from '@/components/WeekTarget';
 import type { DayVerdict } from '@/types';
 import { usePoll } from '@inertiajs/react';
-import { CalendarCheck, CalendarX, CheckCircle, HourglassMedium, Warning } from '@phosphor-icons/react';
+import { CheckCircle, HourglassMedium, Warning } from '@phosphor-icons/react';
 import { useEffect } from 'react';
 import { ClockPanel } from './ClockPanel';
-import { FollowUps } from './FollowUps';
+import { DayLine } from './DayLine';
+import { NeedsYou } from './NeedsYou';
 import { useNotificationPermission, useNow, useRepeatingReminder, useWebHeartbeat } from './hooks';
 import { PresenceCard, PromptCard, presenceDue } from './PromptCards';
 import type { MyDayProps, Shift } from './types';
 
 /**
- * Hari ini. Focal point is the clock panel with today's regular time against the 8-hour limit (DESIGN.md, Layout).
- * Questions that need an answer (8-hour prompt, "Masih lembur?") sit above it while they wait. Clocking in works here
- * and in the desktop app (docs/02 3.11).
+ * Hari ini, layout A (docs/desainUI_v2). The date is the page title; the clock panel is the focal point, with
+ * Perlu kamu next to it on a wide screen and under it on a phone. Questions that need an answer now (8-hour prompt,
+ * "Masih lembur?") sit above both while they wait. Clocking in works here and in the desktop app (docs/02 3.11).
  */
 export default function MyDay({ summary, day, week }: MyDayProps) {
     const t = useT();
@@ -55,89 +56,121 @@ export default function MyDay({ summary, day, week }: MyDayProps) {
     );
 
     const hasShifts = summary.shifts.length > 0;
+
+    return (
+        <AppShell title={t('my-day.title')}>
+            <header className="mb-6 sm:mb-8">
+                <h1 className="h1">{formatLongDate(summary.date, locale)}</h1>
+                <DayLineText day={day} webEnabled={summary.web_clock_in_enabled} />
+            </header>
+
+            {(prompted || presence) && (
+                <div className="mb-6 flex flex-col gap-6">
+                    {prompted && <PromptCard shift={prompted} repeatMinutes={summary.rules.prompt_repeat_minutes} reasonMin={summary.rules.reason_min_length} />}
+                    {presence && <PresenceCard check={presence} answerMinutes={summary.rules.presence_answer_minutes} checkMinutes={summary.rules.presence_check_minutes} />}
+                </div>
+            )}
+
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
+                <ClockPanel summary={summary} permission={permission} onEnableReminders={requestPermission} heartbeatFailedAt={heartbeatFailedAt} />
+                <NeedsYou reports={summary.reports_due} claims={summary.late_claims} reasonMin={summary.rules.reason_min_length} webEnabled={summary.web_clock_in_enabled} />
+            </div>
+
+            <DayLine summary={summary} />
+
+            {(week || hasShifts) && (
+                <div className="mt-10 grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+                    {week && (
+                        <section className="flex flex-col gap-3" aria-labelledby="week-target">
+                            <WeekTargetCard week={week} />
+                        </section>
+                    )}
+                    {hasShifts && <ShiftsToday summary={summary} />}
+                </div>
+            )}
+        </AppShell>
+    );
+}
+
+/** Under the date: what kind of day it is, in one line (the calendar card of the old layout). */
+function DayLineText({ day, webEnabled }: { day: DayVerdict; webEnabled: boolean }) {
+    const t = useT();
+
+    const calendarLine = (() => {
+        if (day.source === 'opened') return t('my-day.opened_note');
+        if (day.source === 'calendar' && day.label) {
+            const key = day.calendar_type === 'holiday' ? 'holiday' : day.calendar_type === 'studio_day_off' ? 'studio_day_off' : 'studio_workday';
+            return t(`my-day.${key}`, { name: day.label });
+        }
+        return null;
+    })();
+
+    return (
+        <p className="m-0 mt-1.5 max-w-[72ch] text-muted">
+            <span className="font-semibold text-ink">{day.is_workday ? t('my-day.workday') : t('my-day.non_workday')}.</span>{' '}
+            {calendarLine && <>{calendarLine}. </>}
+            {day.is_workday ? t('my-day.regular_rule') : webEnabled ? t('my-day.non_workday_note_web') : t('my-day.non_workday_note')}
+        </p>
+    );
+}
+
+function ShiftsToday({ summary }: { summary: MyDayProps['summary'] }) {
+    const t = useT();
+    const locale = useLocale();
     const time = (iso: string | null) => (iso ? formatTime(iso, locale) : '');
     const anyWebShift = summary.shifts.some((shift) => shift.device_id.startsWith('web:'));
 
     return (
-        <AppShell title={t('my-day.title')}>
-            <div className="grid items-start gap-6 xl:grid-cols-[1fr_340px]">
-                <div className="flex min-w-0 flex-col gap-6">
-                    {prompted && <PromptCard shift={prompted} repeatMinutes={summary.rules.prompt_repeat_minutes} reasonMin={summary.rules.reason_min_length} />}
-                    {presence && <PresenceCard check={presence} answerMinutes={summary.rules.presence_answer_minutes} checkMinutes={summary.rules.presence_check_minutes} />}
-                    <ClockPanel summary={summary} permission={permission} onEnableReminders={requestPermission} heartbeatFailedAt={heartbeatFailedAt} />
-                </div>
+        <section aria-labelledby="today-shifts">
+            <h2 id="today-shifts" className="h2">
+                {t('my-day.shifts_heading')}
+            </h2>
+            <ul className="rows m-0 mt-2 list-none p-0">
+                {summary.shifts.map((shift) => (
+                    <li key={shift.id} className="flex flex-col gap-1.5 py-3.5">
+                        <span className="num font-semibold">
+                            {t('my-day.shift_row', {
+                                start: time(shift.clock_in_at),
+                                end: shift.clock_out_at ? time(shift.clock_out_at) : t('my-day.shift_running'),
+                            })}
+                        </span>
+                        <span className="num text-sm text-muted">
+                            {t('my-day.shift_regular', { duration: formatMinutes(shift.regular_minutes, locale) })}
+                            {shift.overtime_minutes > 0 && ` · ${t('my-day.shift_overtime', { duration: formatMinutes(shift.overtime_minutes, locale) })}`}
+                            {shift.interruption_minutes > 0 && ` · ${t('my-day.shift_interrupted', { duration: formatMinutes(shift.interruption_minutes, locale) })}`}
+                        </span>
+                        <ShiftChips shift={shift} />
+                    </li>
+                ))}
+            </ul>
 
-                <div className="flex min-w-0 flex-col gap-6">
-                    <section className="card flex flex-col gap-3 px-5 py-[18px]" aria-labelledby="today-calendar">
-                        <CalendarCard day={day} webEnabled={summary.web_clock_in_enabled} />
-                    </section>
-                    {week && (
-                        <section className="card flex flex-col gap-3 px-5 py-[18px]" aria-labelledby="week-target">
-                            <WeekTargetCard week={week} />
-                        </section>
-                    )}
-                </div>
-            </div>
-
-            <FollowUps reports={summary.reports_due} claims={summary.late_claims} reasonMin={summary.rules.reason_min_length} webEnabled={summary.web_clock_in_enabled} />
-
-            {hasShifts && (
-                <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-                    <section className="card px-5 py-[18px]" aria-labelledby="today-shifts">
-                        <h2 id="today-shifts" className="h2">
-                            {t('my-day.shifts_heading')}
-                        </h2>
-                        <ul className="m-0 mt-3 list-none divide-y divide-line p-0">
-                            {summary.shifts.map((shift) => (
-                                <li key={shift.id} className="flex flex-col gap-1.5 py-3">
-                                    <span className="num font-semibold">
-                                        {t('my-day.shift_row', {
-                                            start: time(shift.clock_in_at),
-                                            end: shift.clock_out_at ? time(shift.clock_out_at) : t('my-day.shift_running'),
-                                        })}
-                                    </span>
-                                    <span className="num text-sm text-muted">
-                                        {t('my-day.shift_regular', { duration: formatMinutes(shift.regular_minutes, locale) })}
-                                        {shift.overtime_minutes > 0 && ` · ${t('my-day.shift_overtime', { duration: formatMinutes(shift.overtime_minutes, locale) })}`}
-                                        {shift.interruption_minutes > 0 && ` · ${t('my-day.shift_interrupted', { duration: formatMinutes(shift.interruption_minutes, locale) })}`}
-                                    </span>
-                                    <ShiftChips shift={shift} />
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-
-                    <section className="card px-5 py-[18px]" aria-labelledby="today-idle">
-                        <h2 id="today-idle" className="h2">
-                            {t('my-day.idle_heading')}
-                        </h2>
-                        {summary.idle_periods.length === 0 ? (
-                            <p className="m-0 mt-3 text-muted">{anyWebShift ? t('my-day.idle_none_web') : t('my-day.idle_none')}</p>
-                        ) : (
-                            <ul className="m-0 mt-3 list-none divide-y divide-line p-0">
-                                {summary.idle_periods.map((period) => (
-                                    <li key={`${period.shift_id}-${period.started_at}`} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                                        <span className="num font-semibold">
-                                            {t('my-day.idle_row', {
-                                                start: time(period.started_at),
-                                                end: period.ended_at ? time(period.ended_at) : t('my-day.idle_open'),
-                                            })}
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="num text-sm text-muted">{formatMinutes(period.minutes, locale)}</span>
-                                            <span className={`chip ${period.tag ? 'chip-info' : ''}`}>
-                                                {period.tag ? t(`my-day.idle_tags.${period.tag}`) : t('my-day.idle_untagged')}
-                                            </span>
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                        <p className="m-0 mt-2 text-[13px] text-muted">{t('my-day.idle_note')}</p>
-                    </section>
-                </div>
+            <h3 id="today-idle" className="mt-6 text-[15px] font-semibold">
+                {t('my-day.idle_heading')}
+            </h3>
+            {summary.idle_periods.length === 0 ? (
+                <p className="m-0 mt-2 text-muted">{anyWebShift ? t('my-day.idle_none_web') : t('my-day.idle_none')}</p>
+            ) : (
+                <ul className="rows m-0 mt-1 list-none p-0" aria-labelledby="today-idle">
+                    {summary.idle_periods.map((period) => (
+                        <li key={`${period.shift_id}-${period.started_at}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+                            <span className="num">
+                                {t('my-day.idle_row', {
+                                    start: time(period.started_at),
+                                    end: period.ended_at ? time(period.ended_at) : t('my-day.idle_open'),
+                                })}
+                            </span>
+                            <span className="flex items-center gap-3">
+                                <span className="num text-sm text-muted">{formatMinutes(period.minutes, locale)}</span>
+                                <span className={`chip ${period.tag ? 'chip-info' : 'text-muted'}`}>
+                                    {period.tag ? t(`my-day.idle_tags.${period.tag}`) : t('my-day.idle_untagged')}
+                                </span>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
             )}
-        </AppShell>
+            <p className="m-0 mt-2 text-[13px] text-muted">{t('my-day.idle_note')}</p>
+        </section>
     );
 }
 
@@ -159,7 +192,7 @@ function ShiftChips({ shift }: { shift: Shift }) {
     if (chips.length === 0) return null;
 
     return (
-        <span className="flex flex-wrap gap-2">
+        <span className="flex flex-wrap gap-x-4 gap-y-1.5">
             {chips.map(({ key, label, tone, icon: Icon }) => (
                 <span key={key} className={`chip ${tone} whitespace-normal`}>
                     <Icon weight="bold" size={15} aria-hidden />
@@ -167,29 +200,5 @@ function ShiftChips({ shift }: { shift: Shift }) {
                 </span>
             ))}
         </span>
-    );
-}
-
-function CalendarCard({ day, webEnabled }: { day: DayVerdict; webEnabled: boolean }) {
-    const t = useT();
-
-    const calendarLine = (() => {
-        if (day.source === 'opened') return t('my-day.opened_note');
-        if (day.source === 'calendar' && day.label) {
-            const key = day.calendar_type === 'holiday' ? 'holiday' : day.calendar_type === 'studio_day_off' ? 'studio_day_off' : 'studio_workday';
-            return t(`my-day.${key}`, { name: day.label });
-        }
-        return null;
-    })();
-
-    return (
-        <>
-            <h2 id="today-calendar" className="h2 flex items-center gap-2">
-                {day.is_workday ? <CalendarCheck weight="bold" size={22} aria-hidden /> : <CalendarX weight="bold" size={22} aria-hidden />}
-                {day.is_workday ? t('my-day.workday') : t('my-day.non_workday')}
-            </h2>
-            {calendarLine && <p className="m-0 font-semibold">{calendarLine}</p>}
-            <p className="m-0 text-muted">{day.is_workday ? t('my-day.regular_rule') : webEnabled ? t('my-day.non_workday_note_web') : t('my-day.non_workday_note')}</p>
-        </>
     );
 }

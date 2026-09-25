@@ -33,7 +33,7 @@ describe('authorization', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/devices/Index')
-                ->where('nav', fn ($nav) => collect(collect($nav)->firstWhere('group', 'people')['items'])->contains('key', 'devices')));
+                ->where('nav', fn ($nav) => navChildren($nav, 'settings')->contains('devices')));
     });
 
     it('refuses everyone else on every device route', function (Role $role) {

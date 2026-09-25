@@ -138,19 +138,19 @@ it('refuses the preview and the shift list for people outside the scope', functi
         ->assertJsonPath('shifts.0.unavailable.overtime_ended_at', 'no_overtime');
 });
 
-it('shows Koreksi under Tim for Management and under Pengaturan for Superadmin', function () {
-    $keysIn = fn (User $user, string $group) => collect(collect($this->actingAs($user)->get(route('corrections.index'))->assertOk()
-        ->viewData('page')['props']['nav'])->firstWhere('group', $group)['items'] ?? [])->pluck('key');
+it('shows Koreksi under Persetujuan for Management and on Pengaturan for Superadmin', function () {
+    $keysIn = fn (User $user, string $item) => navChildren($this->actingAs($user)->get(route('corrections.index'))->assertOk()
+        ->viewData('page')['props']['nav'], $item);
 
-    expect($keysIn($this->lead, 'team'))->toContain('corrections')
-        ->and($keysIn($this->admin, 'admin'))->toContain('corrections')
-        ->and($keysIn($this->admin, 'team'))->not->toContain('corrections');
+    expect($keysIn($this->lead, 'approvals'))->toContain('corrections')
+        ->and($keysIn($this->admin, 'settings'))->toContain('corrections')
+        ->and($keysIn($this->admin, 'approvals'))->not->toContain('corrections');
 
     $both = userWithRole(Role::Superadmin, Role::TeamLead);
 
-    expect($keysIn($both, 'admin'))->toContain('corrections')
-        ->and($keysIn($both, 'team'))->not->toContain('corrections');
+    expect($keysIn($both, 'settings'))->toContain('corrections')
+        ->and($keysIn($both, 'approvals'))->not->toContain('corrections');
 
     $this->actingAs(userWithRole(Role::Employee))->get(route('my-day'))
-        ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => ! collect($nav)->flatMap(fn ($g) => $g['items'])->contains('key', 'corrections')));
+        ->assertInertia(fn ($page) => $page->where('nav', fn ($nav) => ! navKeys($nav)->contains('corrections')));
 });

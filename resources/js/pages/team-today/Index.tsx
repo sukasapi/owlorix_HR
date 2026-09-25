@@ -74,7 +74,7 @@ export default function TeamToday({ scope, board }: TeamTodayProps) {
         <AppShell title={t('team-today.title')}>
             <div className="flex flex-col gap-6">
                 <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-                    <h1 className="h1 lg:text-[40px]">{t('team-today.title')}</h1>
+                    <h1 className="h1">{t('team-today.title')}</h1>
                     {canHavePeople && (
                         <div className="flex w-full flex-wrap items-center gap-x-5 gap-y-2 sm:w-auto">
                             {board.teams.length > 1 && (

@@ -28,7 +28,7 @@ export default function LeaveApprovals({ pending, recent, recent_limit }: Approv
             <div className="flex flex-col gap-6">
                 <header className="flex flex-col gap-1.5">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <h1 className="h1 lg:text-[40px]">{t('leave.approvals.title')}</h1>
+                        <h1 className="h1">{t('leave.approvals.title')}</h1>
                         {pending.length > 0 && (
                             <span className="num inline-flex h-[26px] items-center rounded-full bg-gold px-2.5 text-[14px] font-bold text-[#1A1A2E]">
                                 {t('leave.approvals.waiting_count', { count: pending.length })}

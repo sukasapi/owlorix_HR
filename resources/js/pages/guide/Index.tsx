@@ -134,7 +134,7 @@ function AskBox({ query, onChange }: { query: string; onChange: (value: string) 
             <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold">{t('guide.ask.examples')}</span>
                 {exampleQuestions.map((q) => (
-                    <button key={q} type="button" className="chip min-h-11 cursor-pointer bg-surface hover:bg-[var(--selected)]" onClick={() => onChange(q)}>
+                    <button key={q} type="button" className="btn btn-secondary btn-sm min-h-11" onClick={() => onChange(q)}>
                         {q}
                     </button>
                 ))}
@@ -187,7 +187,7 @@ function Results({ result, flows, onOpen, onAsk }: { result: SearchResult; flows
                     <p className="m-0 mt-2">{t('guide.answer.none_body')}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                         {exampleQuestions.map((q) => (
-                            <button key={q} type="button" className="chip min-h-11 cursor-pointer" onClick={() => onAsk(q)}>
+                            <button key={q} type="button" className="btn btn-secondary btn-sm min-h-11" onClick={() => onAsk(q)}>
                                 {q}
                             </button>
                         ))}
