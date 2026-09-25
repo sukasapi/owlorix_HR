@@ -48,6 +48,8 @@ class Navigation
                 ['key' => 'monitoring', 'children' => [
                     ['key' => 'work_monitor', 'route' => 'monitoring.work', 'permissions' => [Permission::ViewWorkMonitor]],
                     ['key' => 'workload', 'route' => 'monitoring.workload', 'permissions' => [Permission::ViewWorkMonitor]],
+                    // Superadmin only: applications and window titles on studio PCs during work
+                    ['key' => 'app_usage', 'route' => 'monitoring.app-usage', 'permissions' => [Permission::ViewAppUsage]],
                 ]],
             ]],
             ['group' => 'more', 'items' => [

@@ -30,6 +30,7 @@ export default {
         leave: 'Cuti',
         milestone: 'Milestone',
         project_link: 'Dokumen proyek',
+        app_usage: 'Aktivitas detail',
         pipeline: 'Pipeline',
         sub_project: 'Sub proyek',
         task: 'Tugas',
@@ -38,6 +39,7 @@ export default {
     },
     // Every action name passed to Auditor::record() in app/ needs a label here and in en/audit.ts (tests/Feature/AdminAudit)
     actions: {
+        'app_usage.viewed': 'Aktivitas detail dibuka',
         'leave.requested': 'Cuti diajukan',
         'leave.approved': 'Cuti disetujui',
         'leave.rejected': 'Cuti ditolak',

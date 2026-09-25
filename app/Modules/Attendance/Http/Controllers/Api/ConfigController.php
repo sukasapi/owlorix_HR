@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Attendance\Support\Time;
 use App\Modules\Calendar\Services\DayVerdict;
 use App\Modules\Calendar\Services\WorkdayResolver;
+use App\Modules\Monitoring\Services\AppUsagePolicy;
 use App\Modules\Shared\Settings\Settings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,7 @@ class ConfigController extends Controller
 {
     private const CALENDAR_MONTHS = 3;
 
-    public function __invoke(Request $request, Settings $settings, WorkdayResolver $calendar): JsonResponse
+    public function __invoke(Request $request, Settings $settings, WorkdayResolver $calendar, AppUsagePolicy $appUsage): JsonResponse
     {
         $now = CarbonImmutable::now();
         $today = Time::workDate($now);
@@ -25,7 +26,9 @@ class ConfigController extends Controller
         return response()->json([
             'server_time' => Time::iso($now),
             'timezone' => Time::zone(),
-            'settings' => $settings->all(),
+            // Aktivitas detail is sent as this person's answer (rule on and their employment type recorded), so the
+            // desktop app needs no knowledge of employment types
+            'settings' => ['monitoring.app_usage' => $appUsage->records($request->user())] + $settings->all(),
             'calendar' => array_values(array_map(
                 fn (DayVerdict $day) => $day->toArray(),
                 $calendar->range($request->user(), $today, $until),

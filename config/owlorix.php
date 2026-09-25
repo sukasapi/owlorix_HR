@@ -24,6 +24,15 @@ return [
         'app.timezone' => 'Asia/Jakarta',
         // Days kept in access_logs for Monitor aktivitas (docs/14); the audit log is never pruned
         'monitoring.access_log_days' => 365,
+        // Aktivitas detail (2026-09-25): the desktop app records the application and window title in front while
+        // the person is clocked in, after they confirmed the notice. Older rows move to the archive, never deleted.
+        'monitoring.app_usage' => true,
+        'monitoring.app_usage_active_days' => 90,
+        // Which employment types are recorded (owner 2026-09-25: permanent and contract only)
+        'monitoring.app_usage_permanent' => true,
+        'monitoring.app_usage_contract' => true,
+        'monitoring.app_usage_freelance' => false,
+        'monitoring.app_usage_intern' => false,
         // Yearly annual-leave days when a person has no leave_quotas row (docs/14)
         'leave.annual_quota_days' => 12,
         // Weekly work targets per employment type (docs/02 3.12). Shown to people, never used to cut pay or time.

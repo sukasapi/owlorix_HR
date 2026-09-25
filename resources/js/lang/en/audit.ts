@@ -30,6 +30,7 @@ export default {
         leave: 'Leave',
         milestone: 'Milestones',
         project_link: 'Project documents',
+        app_usage: 'Detailed activity',
         pipeline: 'Pipeline',
         sub_project: 'Sub projects',
         task: 'Tasks',
@@ -38,6 +39,7 @@ export default {
     },
     // Every action name passed to Auditor::record() in app/ needs a label here and in id/audit.ts (tests/Feature/AdminAudit)
     actions: {
+        'app_usage.viewed': 'Detailed activity opened',
         'leave.requested': 'Leave requested',
         'leave.approved': 'Leave approved',
         'leave.rejected': 'Leave rejected',

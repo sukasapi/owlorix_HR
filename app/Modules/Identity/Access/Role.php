@@ -62,6 +62,7 @@ enum Role: string
                 Permission::ExportReports,
                 Permission::ViewAuditLog,
                 Permission::ViewActivityMonitor,
+                Permission::ViewAppUsage,
                 Permission::ManageLeave,
             ],
         };
