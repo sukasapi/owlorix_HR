@@ -32,7 +32,12 @@ class Navigation
                 ['key' => 'activity_log', 'route' => 'activity.index', 'permissions' => [Permission::LogActivity]],
             ]],
             ['group' => 'team', 'items' => [
-                ['key' => 'team_today', 'route' => 'team.today', 'permissions' => [Permission::ViewTeamBoard]],
+                // Tabs: the live board, PC diam with the lead's review, and the team's work logs
+                ['key' => 'team_today', 'children' => [
+                    ['key' => 'team_today', 'route' => 'team.today', 'permissions' => [Permission::ViewTeamBoard]],
+                    ['key' => 'team_idle', 'route' => 'team.idle', 'permissions' => [Permission::ViewTeamBoard]],
+                    ['key' => 'team_logs', 'route' => 'team.logs', 'permissions' => [Permission::ViewTeamBoard]],
+                ]],
                 ['key' => 'approvals', 'children' => [
                     ['key' => 'approvals', 'route' => 'approvals.index', 'permissions' => [Permission::ApproveOvertime, Permission::ChangeOvertimeDecisions]],
                     // Leave requests to decide; someone who manages all leave finds them under Pengaturan

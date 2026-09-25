@@ -22,6 +22,14 @@ export function badgeCount(item: NavItem, badges: Record<string, number>) {
     return badgeKeys(item).reduce((sum, key) => sum + (badges[key] ?? 0), 0);
 }
 
+/**
+ * The open tab of an item: the tab whose address matches the page most closely, so "/tim-hari-ini/pc-diam" opens
+ * "PC diam" and not "Papan hari ini" at "/tim-hari-ini".
+ */
+export function currentChild(item: NavItem, url: string): NavItem | null {
+    return (item.children ?? []).filter((child) => isCurrent(url, child.href)).sort((a, b) => b.href.length - a.href.length)[0] ?? null;
+}
+
 /** The item with tabs that holds the open page, if any: its tabs (or the Pengaturan crumb) sit above the page. */
 export function currentSection(groups: NavGroup[], url: string): NavItem | null {
     for (const group of groups) {

@@ -18,7 +18,7 @@ import type { MyDayProps, Shift } from './types';
  * Perlu kamu next to it on a wide screen and under it on a phone. Questions that need an answer now (8-hour prompt,
  * "Masih lembur?") sit above both while they wait. Clocking in works here and in the desktop app (docs/02 3.11).
  */
-export default function MyDay({ summary, day, week }: MyDayProps) {
+export default function MyDay({ summary, day, week, idle_questions }: MyDayProps) {
     const t = useT();
     const locale = useLocale();
     const open = summary.open_shift;
@@ -30,7 +30,7 @@ export default function MyDay({ summary, day, week }: MyDayProps) {
     const heartbeatFailedAt = useWebHeartbeat(mine, summary.rules.heartbeat_seconds);
 
     // A shift on another device still updates here; the poll may pause in a hidden tab, the heartbeat above may not
-    const poll = usePoll(60_000, { only: ['summary', 'week'] }, { autoStart: false });
+    const poll = usePoll(60_000, { only: ['summary', 'week', 'idle_questions'] }, { autoStart: false });
     useEffect(() => {
         if (live && !mine) poll.start();
         else poll.stop();
@@ -73,7 +73,13 @@ export default function MyDay({ summary, day, week }: MyDayProps) {
 
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-8">
                 <ClockPanel summary={summary} permission={permission} onEnableReminders={requestPermission} heartbeatFailedAt={heartbeatFailedAt} />
-                <NeedsYou reports={summary.reports_due} claims={summary.late_claims} reasonMin={summary.rules.reason_min_length} webEnabled={summary.web_clock_in_enabled} />
+                <NeedsYou
+                    reports={summary.reports_due}
+                    claims={summary.late_claims}
+                    questions={idle_questions ?? []}
+                    reasonMin={summary.rules.reason_min_length}
+                    webEnabled={summary.web_clock_in_enabled}
+                />
             </div>
 
             <DayLine summary={summary} />

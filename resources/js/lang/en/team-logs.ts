@@ -1,0 +1,26 @@
+export default {
+    title: 'Team work log',
+    lead: 'Work log entries of the people on your team. Read only: each person edits their own log in Work log.',
+    filters: {
+        label: 'Filter work log',
+        person: 'Person',
+        everyone: 'Everyone',
+        project: 'Project',
+        all_projects: 'All projects',
+        from: 'From',
+        to: 'To',
+    },
+    summary: ':count entries, :duration in total',
+    range: ':start to :end',
+    evidence: 'Open evidence',
+    no_project: 'No project',
+    empty_scope: 'You do not lead a team yet, so there is nothing to see here.',
+    empty_title: 'No work log entries in this range.',
+    empty_body: 'Try another date range, or clear the person and project filters.',
+    pagination: {
+        label: 'Work log pages',
+        previous: 'Newer',
+        next: 'Older',
+        page: 'Page :current of :last',
+    },
+};

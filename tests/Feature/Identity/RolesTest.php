@@ -17,7 +17,8 @@ it('gives every role only its own permissions', function (Role $role, array $has
     'team lead' => [Role::TeamLead, [Permission::ApproveOvertime, Permission::ViewTeamBoard, Permission::OpenWorkdays], [Permission::ApproveAnyOvertime, Permission::ManageUsers, Permission::ManageCalendar]],
     'project manager' => [Role::ProjectManager, [Permission::ApproveOvertime, Permission::ApproveAnyOvertime], [Permission::ChangeOvertimeDecisions, Permission::ManageUsers]],
     'project director' => [Role::ProjectDirector, [Permission::ApproveAnyOvertime, Permission::ChangeOvertimeDecisions], [Permission::ManageUsers, Permission::ApplyCorrections]],
-    'superadmin' => [Role::Superadmin, [Permission::ManageUsers, Permission::ManageCalendar, Permission::ApplyCorrections, Permission::ExportReports], [Permission::ApproveOvertime, Permission::ViewTeamBoard]],
+    // Superadmin sees Tim hari ini and its tabs (owner, 2026-09-25) but still approves no overtime
+    'superadmin' => [Role::Superadmin, [Permission::ManageUsers, Permission::ManageCalendar, Permission::ApplyCorrections, Permission::ExportReports, Permission::ViewTeamBoard], [Permission::ApproveOvertime]],
 ]);
 
 it('combines permissions when a person holds several roles', function () {

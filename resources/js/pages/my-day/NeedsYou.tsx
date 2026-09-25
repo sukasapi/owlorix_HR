@@ -5,10 +5,10 @@ import { formatDateTime, formatMinutes, formatShortDate, formatTime } from '@/li
 import { useLocale, useT } from '@/lib/i18n';
 import type { SharedProps } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle, ClockCounterClockwise, NotePencil, WarningCircle } from '@phosphor-icons/react';
+import { ChatCircleText, CheckCircle, ClockCounterClockwise, NotePencil, WarningCircle } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { toStudioInput } from './hooks';
-import { errorText, type LateClaim, type ReportDue } from './types';
+import { errorText, type IdleQuestion, type LateClaim, type ReportDue } from './types';
 
 const visit = { preserveScroll: true, only: ['summary', 'week'] };
 
@@ -18,12 +18,24 @@ const visit = { preserveScroll: true, only: ['summary', 'week'] };
  * stay listed without the forms, because those endpoints refuse (3.11.8). Decisions waiting in Persetujuan and in
  * tasks are counts that link to their page.
  */
-export function NeedsYou({ reports, claims, reasonMin, webEnabled }: { reports: ReportDue[]; claims: LateClaim[]; reasonMin: number; webEnabled: boolean }) {
+export function NeedsYou({
+    reports,
+    claims,
+    questions,
+    reasonMin,
+    webEnabled,
+}: {
+    reports: ReportDue[];
+    claims: LateClaim[];
+    questions: IdleQuestion[];
+    reasonMin: number;
+    webEnabled: boolean;
+}) {
     const t = useT();
     const badges = (usePage<SharedProps>().props.nav_badges ?? {}) as Record<string, number>;
     const approvals = badges.approvals ?? 0;
     const tasks = badges.my_tasks ?? 0;
-    const count = reports.length + claims.length + (approvals > 0 ? 1 : 0) + (tasks > 0 ? 1 : 0);
+    const count = reports.length + claims.length + questions.length + (approvals > 0 ? 1 : 0) + (tasks > 0 ? 1 : 0);
 
     return (
         <section className="card px-5 pt-4 pb-1.5 sm:px-6" aria-labelledby="needs-you">
@@ -43,6 +55,9 @@ export function NeedsYou({ reports, claims, reasonMin, webEnabled }: { reports: 
                     ))}
                     {claims.map((claim) => (
                         <ClaimItem key={`claim-${claim.shift_id}`} claim={claim} reasonMin={reasonMin} canWrite={webEnabled} />
+                    ))}
+                    {questions.map((question) => (
+                        <IdleQuestionItem key={`idle-${question.id}`} question={question} />
                     ))}
                     {approvals > 0 && <LinkItem text={t('my-day.needs.approvals', { count: approvals })} href={route('approvals.index')} />}
                     {tasks > 0 && <LinkItem text={t('my-day.needs.tasks', { count: tasks })} href={route('projects.mine')} />}
@@ -82,6 +97,74 @@ function LinkItem({ text, href }: { text: string; href: string }) {
                 </Link>
             }
         />
+    );
+}
+
+/** A lead's question about one PC diam period; the answer goes back to the lead's PC diam tab. */
+function IdleQuestionItem({ question }: { question: IdleQuestion }) {
+    const t = useT();
+    const locale = useLocale();
+    const [open, setOpen] = useState(false);
+    const titleId = useId();
+    const form = useForm({ answer: '' });
+    const name = question.asked_by ?? '';
+    const date = question.work_date ? formatShortDate(question.work_date, locale) : '';
+    const title = question.ended_at
+        ? t('my-day.needs.idle_question', { name, date, start: formatTime(question.started_at, locale), end: formatTime(question.ended_at, locale) })
+        : t('my-day.needs.idle_question_open', { name, date, start: formatTime(question.started_at, locale) });
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(route('idle-reviews.answer', question.id), { preserveScroll: true, only: ['idle_questions', 'nav_badges'], onSuccess: () => setOpen(false) });
+    };
+
+    return (
+        <Row
+            title={title}
+            detail={
+                <>
+                    {question.minutes !== null && formatMinutes(question.minutes, locale)}
+                    {question.question && <span className="mt-1 block text-ink">&ldquo;{question.question}&rdquo;</span>}
+                </>
+            }
+            action={
+                <button type="button" className="btn btn-secondary btn-sm min-h-11" onClick={() => setOpen(true)}>
+                    <ChatCircleText weight="bold" size={16} aria-hidden />
+                    {t('my-day.needs.idle_answer')}
+                </button>
+            }
+        >
+            <Dialog open={open} onClose={() => setOpen(false)} labelledBy={titleId} closeOnBackdrop={false}>
+                <form onSubmit={submit} className="flex flex-col gap-4 px-5 py-5 sm:px-7">
+                    <h2 id={titleId} className="h2">
+                        {t('my-day.needs.idle_answer_title')}
+                    </h2>
+                    <div className="rounded-md bg-panel px-4 py-3 text-sm">
+                        <p className="num m-0 font-semibold">{title}</p>
+                        {question.question && <p className="m-0 mt-1">&ldquo;{question.question}&rdquo;</p>}
+                        {question.tag && <p className="m-0 mt-1 text-muted">{t('my-day.needs.idle_tagged', { tag: t(`my-day.idle_tags.${question.tag}`) })}</p>}
+                    </div>
+                    <TextAreaField
+                        autoFocus
+                        label={t('my-day.needs.idle_answer_label')}
+                        help={t('my-day.needs.idle_answer_help', { name })}
+                        value={form.data.answer}
+                        onChange={(e) => form.setData('answer', e.target.value)}
+                        error={form.errors.answer === 'answer_closed' ? t('my-day.needs.idle_closed') : form.errors.answer}
+                        maxLength={1000}
+                        required
+                    />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <button type="submit" className="btn btn-primary" disabled={form.processing || form.data.answer.trim().length < 5}>
+                            {form.processing ? t('my-day.saving') : t('my-day.needs.idle_answer_submit')}
+                        </button>
+                        <button type="button" className="btn btn-quiet" onClick={() => setOpen(false)}>
+                            {t('my-day.back')}
+                        </button>
+                    </div>
+                </form>
+            </Dialog>
+        </Row>
     );
 }
 

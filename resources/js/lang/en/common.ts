@@ -6,7 +6,7 @@ export default {
         short: { my_day: 'Today', my_tasks: 'Tasks', approvals: 'Approve', team_today: 'Team', activity_log: 'Log', monitoring: 'Monitor' },
         monitoring: 'Monitoring',
         app_usage: 'Detailed activity',
-        tabs: { approvals: 'Overtime', leave_approvals: 'Leave', corrections: 'Corrections', work_monitor: 'Work monitor', workload: 'Workload', app_usage: 'Detailed activity' },
+        tabs: { team_today: 'Board', team_idle: 'Idle PC', team_logs: 'Work log', approvals: 'Overtime', leave_approvals: 'Leave', corrections: 'Corrections', work_monitor: 'Work monitor', workload: 'Workload', app_usage: 'Detailed activity' },
         my_day: 'My day',
         history: 'History',
         overtime: 'Overtime',

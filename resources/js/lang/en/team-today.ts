@@ -34,6 +34,8 @@ export default {
     },
     minutes: 'Regular :regular, overtime :overtime',
     minutes_regular: 'Regular :regular',
+    working_on: 'Working on :task',
+    working_since: 'since :time',
     needs_review: 'Needs review',
     on_leave_today: 'on leave today (:type), clocked in anyway',
     empty: {

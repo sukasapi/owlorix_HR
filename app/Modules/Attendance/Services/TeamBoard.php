@@ -6,7 +6,6 @@ use App\Modules\Attendance\Calculation\IdlePeriodResult;
 use App\Modules\Attendance\Enums\ShiftStatus;
 use App\Modules\Attendance\Models\Shift;
 use App\Modules\Attendance\Support\Time;
-use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Models\Device;
 use App\Modules\Identity\Models\User;
 use App\Modules\Leave\Services\LeaveDays;
@@ -17,8 +16,8 @@ use Carbon\CarbonImmutable;
  * Data for Tim hari ini: the state of each person in the viewer's scope right now, read through ShiftStateResolver
  * so time rules apply without waiting for `attendance:settle`.
  *
- * Scope: people who approve anyone's overtime (Project Manager, Project Director) see every active person; a Team
- * Lead sees the members of the teams they lead. The viewer is left out; their own day is on Hari ini.
+ * Scope (TeamScope): Project Managers, Project Directors, and Superadmin see every active person; a Team Lead sees
+ * the members of the teams they lead. The viewer is left out; their own day is on Hari ini.
  *
  * A person with approved leave today who has not clocked in shows as on leave (docs/14 4.3). Clocking in on a
  * leave day is recorded as usual, and they then show by their shift like anyone else.
@@ -32,6 +31,7 @@ class TeamBoard
         private readonly ShiftStateResolver $resolver,
         private readonly LeaveDays $leaveDays,
         private readonly WeekTarget $weekTarget,
+        private readonly TeamScope $scope,
     ) {}
 
     /**
@@ -44,13 +44,10 @@ class TeamBoard
     {
         $now ??= CarbonImmutable::now();
         $today = Time::workDate($now);
-        $everyone = $viewer->hasPermission(Permission::ApproveAnyOvertime);
+        $everyone = $this->scope->everyone($viewer);
         $leadsTeam = Team::query()->where('lead_user_id', $viewer->id)->exists();
 
-        $people = User::query()
-            ->active()
-            ->whereKeyNot($viewer->id)
-            ->when(! $everyone, fn ($q) => $q->whereHas('teams', fn ($t) => $t->where('lead_user_id', $viewer->id)))
+        $people = $this->scope->people($viewer)
             ->with(['teams' => fn ($q) => $q->select('teams.id', 'teams.name', 'teams.lead_user_id')->orderBy('name')])
             ->orderBy('name')
             ->orderBy('id')

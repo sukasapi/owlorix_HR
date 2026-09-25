@@ -1,0 +1,26 @@
+export default {
+    title: 'Log kerja tim',
+    lead: 'Catatan kerja orang di timmu. Halaman ini hanya untuk dibaca: setiap orang mengubah lognya sendiri di Log kerja.',
+    filters: {
+        label: 'Saring log kerja',
+        person: 'Orang',
+        everyone: 'Semua orang',
+        project: 'Proyek',
+        all_projects: 'Semua proyek',
+        from: 'Dari',
+        to: 'Sampai',
+    },
+    summary: ':count catatan, total :duration',
+    range: ':start sampai :end',
+    evidence: 'Buka bukti',
+    no_project: 'Tanpa proyek',
+    empty_scope: 'Kamu belum memimpin tim, jadi belum ada yang bisa dilihat di sini.',
+    empty_title: 'Belum ada log kerja pada rentang ini.',
+    empty_body: 'Coba rentang tanggal lain, atau hapus saringan orang dan proyek.',
+    pagination: {
+        label: 'Halaman log kerja',
+        previous: 'Lebih baru',
+        next: 'Lebih lama',
+        page: 'Halaman :current dari :last',
+    },
+};

@@ -6,7 +6,7 @@ export default {
         short: { my_tasks: 'Tugas', approvals: 'Setujui', team_today: 'Tim', leave: 'Cuti', activity_log: 'Log', monitoring: 'Pantau', settings: 'Atur' },
         monitoring: 'Pantauan',
         app_usage: 'Aktivitas detail',
-        tabs: { approvals: 'Lembur', leave_approvals: 'Cuti & izin', corrections: 'Koreksi', work_monitor: 'Monitor kerja', workload: 'Beban kerja', app_usage: 'Aktivitas detail' },
+        tabs: { team_today: 'Papan hari ini', team_idle: 'PC diam', team_logs: 'Log kerja', approvals: 'Lembur', leave_approvals: 'Cuti & izin', corrections: 'Koreksi', work_monitor: 'Monitor kerja', workload: 'Beban kerja', app_usage: 'Aktivitas detail' },
         my_day: 'Hari ini',
         history: 'Riwayat',
         overtime: 'Lembur',

@@ -2,7 +2,8 @@ import { OwlEyes } from '@/components/owl/OwlEyes';
 import { WeekTargetLine } from '@/components/WeekTarget';
 import { formatMinutes, formatTime } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
-import { Warning } from '@phosphor-icons/react';
+import { Link } from '@inertiajs/react';
+import { Timer, Warning } from '@phosphor-icons/react';
 import type { BoardPerson } from './types';
 
 /** The status sentence of a person, in words, so the eyes are never the only signal. */
@@ -73,6 +74,16 @@ export function PersonCard({ person, showTeam }: { person: BoardPerson; showTeam
                           })}
                     {showTeam && person.teams.length > 0 && `, ${person.teams.join(', ')}`}
                 </p>
+                {person.task && (
+                    <Link href={route('tasks.show', person.task.id)} className="mt-1 flex min-w-0 items-start gap-1.5 self-start text-sm hover:underline">
+                        <Timer weight="bold" size={16} aria-hidden className="mt-0.5 flex-none text-teal-text" />
+                        <span className="min-w-0 break-words">
+                            {t('team-today.working_on', { task: person.task.title })}
+                            {person.task.project && <span className="text-muted">, {person.task.project}</span>}
+                            {person.task.started_at && <span className="num text-muted">, {t('team-today.working_since', { time: formatTime(person.task.started_at, locale) })}</span>}
+                        </span>
+                    </Link>
+                )}
                 {person.week && <WeekTargetLine week={person.week} />}
                 {person.needs_review && (
                     <span className="chip chip-bad mt-1 self-start">

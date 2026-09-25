@@ -8,7 +8,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CaretDoubleLeft, CaretDoubleRight, CaretUpDown, Key, List, SignOut, Timer, UserCircle, X } from '@phosphor-icons/react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { navIcons } from './navIcons';
-import { PINNED_GROUP, badgeCount, currentSection, isCurrent, itemIsCurrent } from './navModel';
+import { PINNED_GROUP, badgeCount, currentChild, currentSection, itemIsCurrent } from './navModel';
 
 interface Props {
     title: string;
@@ -292,11 +292,12 @@ function SectionHeader({ groups, url }: { groups: NavGroup[]; url: string }) {
     }
 
     if (section.children.length < 2) return null;
+    const open = currentChild(section, url);
 
     return (
         <nav aria-label={t(`common.nav.${section.key}`)} className="tabbar mb-6">
             {section.children.map((child) => (
-                <Link key={child.key} href={child.href} aria-current={isCurrent(url, child.href) ? 'page' : undefined}>
+                <Link key={child.key} href={child.href} aria-current={open?.key === child.key ? 'page' : undefined}>
                     {t(`common.nav.tabs.${child.key}`)}
                     <CountBadge count={badges[child.key] ?? 0} />
                 </Link>

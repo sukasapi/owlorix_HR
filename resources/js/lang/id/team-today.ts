@@ -35,6 +35,8 @@ export default {
     minutes: 'Reguler :regular, lembur :overtime',
     minutes_regular: 'Reguler :regular',
     needs_review: 'Perlu dicek',
+    working_on: 'Mengerjakan :task',
+    working_since: 'sejak :time',
     on_leave_today: 'cuti hari ini (:type), tetap absen',
     empty: {
         no_team_title: 'Kamu belum memimpin tim.',

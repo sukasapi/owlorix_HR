@@ -69,9 +69,20 @@ test('a Team Lead who leads no team gets an empty board with the reason', functi
             ->has('board.teams', 0));
 });
 
-test('employees and Superadmin cannot open the team board', function () {
+test('employees cannot open the team board', function () {
     $this->actingAs(teamTodayPerson('Karyawan'))->get(route('team.today'))->assertForbidden();
-    $this->actingAs(teamTodayPerson('Admin', Role::Superadmin))->get(route('team.today'))->assertForbidden();
+});
+
+test('Superadmin sees every active person on the team board (owner, 2026-09-25)', function () {
+    $admin = teamTodayPerson('Admin', Role::Superadmin);
+    $member = teamTodayPerson('Anggota Animation');
+    $this->team->members()->attach($member);
+
+    $this->actingAs($admin)->get(route('team.today'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('scope.everyone', true)
+            ->where('board.people', fn ($people) => collect($people)->pluck('id')->contains($member->id)));
 });
 
 test('4.2.6 the board shows each person\'s state right now, ordered by status group then name', function () {
@@ -199,7 +210,7 @@ test('polling reloads only the board prop with a fresh update time', function ()
         ->and($response->json('props.board.date'))->toBe('2026-09-14')
         ->and(array_keys($response->json('props.board.people.0')))->toBe([
             'id', 'name', 'initials', 'team_ids', 'teams', 'group', 'status', 'eyes', 'since', 'device',
-            'regular_minutes', 'overtime_minutes', 'idle', 'needs_review', 'leave', 'week',
+            'regular_minutes', 'overtime_minutes', 'idle', 'needs_review', 'leave', 'week', 'task',
         ]);
 });
 
