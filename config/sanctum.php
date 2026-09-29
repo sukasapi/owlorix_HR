@@ -52,6 +52,10 @@ return [
 
     'expiration' => null,
 
+    // Sanctum would write last_used_at on every desktop request. AuthenticateDevice writes it at most once a
+    // minute instead, which is enough for Monitor aktivitas (online = used in the last 5 minutes).
+    'last_used_at' => false,
+
     /*
     |--------------------------------------------------------------------------
     | Token Prefix

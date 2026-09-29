@@ -27,6 +27,9 @@ class AuthenticateDevice
     /** A PC syncs every 120 s, plus retries, shift reads and config reads */
     private const REQUESTS_PER_MINUTE = 120;
 
+    /** Sanctum's own write on every request is off (config/sanctum.php); this is often enough for Monitor aktivitas */
+    private const LAST_USED_EVERY_SECONDS = 60;
+
     public function __construct(
         private readonly AuthFactory $auth,
         private readonly RateLimiter $limiter,
@@ -53,6 +56,10 @@ class AuthenticateDevice
 
         if (! $user->isActive()) {
             return ApiError::response(403, 'inactive', __('auth.inactive'));
+        }
+
+        if ($token->last_used_at === null || $token->last_used_at->lt(now()->subSeconds(self::LAST_USED_EVERY_SECONDS))) {
+            $token->forceFill(['last_used_at' => now()])->save();
         }
 
         $key = 'desktop-api:'.$token->getKey();
