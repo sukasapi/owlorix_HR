@@ -34,6 +34,46 @@ class ShiftStateResolver
         ));
     }
 
+    /**
+     * workDate() for several people at once, in a fixed number of queries.
+     *
+     * @param  list<int>  $userIds
+     * @return array<int, list<ResolvedShift>> every requested id is a key; cancelled clock-ins left out
+     */
+    public function workDateMany(array $userIds, string $workDate, ?CarbonImmutable $now = null): array
+    {
+        $calculated = $this->dates->calculateMany($userIds, $workDate, $now ?? CarbonImmutable::now());
+
+        return collect($userIds)->mapWithKeys(fn (int $id) => [$id => array_values(array_filter(
+            $calculated[$id] ?? [],
+            fn (ResolvedShift $resolved) => ! $resolved->result->cancelled,
+        ))])->all();
+    }
+
+    /**
+     * shift() for several shifts at once, one batch per work date.
+     *
+     * @param  iterable<Shift>  $shifts
+     * @return array<int, ResolvedShift> keyed by shift id; a cancelled clock-in is left out
+     */
+    public function shifts(iterable $shifts, ?CarbonImmutable $now = null): array
+    {
+        $wanted = collect($shifts)->keyBy('id');
+        $found = [];
+
+        foreach ($wanted->groupBy(fn (Shift $shift) => (string) $shift->work_date) as $date => $group) {
+            foreach ($this->workDateMany($group->pluck('user_id')->map(fn ($id) => (int) $id)->unique()->values()->all(), (string) $date, $now) as $resolved) {
+                foreach ($resolved as $one) {
+                    if ($wanted->has($one->shift->id)) {
+                        $found[$one->shift->id] = $one;
+                    }
+                }
+            }
+        }
+
+        return $found;
+    }
+
     public function shift(Shift $shift, ?CarbonImmutable $now = null): ?ResolvedShift
     {
         foreach ($this->workDate($shift->user_id, $shift->work_date, $now) as $resolved) {

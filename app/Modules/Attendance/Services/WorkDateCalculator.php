@@ -50,11 +50,93 @@ class WorkDateCalculator
         }
 
         $user = User::withTrashed()->findOrFail($userId);
-        $isWorkday = $this->calendar->isWorkday($user, $workDate);
-        $rules = ShiftRules::fromSettings($this->settings);
 
         /** @var Collection<int, Collection<int, AttendanceEvent>> $events */
         $events = AttendanceEvent::query()->whereIn('shift_id', $shifts->modelKeys())->get()->groupBy('shift_id');
+
+        return $this->resolve(
+            $shifts,
+            $events,
+            $this->calendar->isWorkday($user, $workDate),
+            $this->clockInAfter($userId, $shifts->last()),
+            $now,
+            $nextClockInOverrides,
+            $keepSavedRegular,
+            $extraEvents,
+        );
+    }
+
+    /**
+     * calculate() for several people on one work date, in a fixed number of queries however many people are asked
+     * for (Tim hari ini reloads every 30 s for the whole studio).
+     *
+     * @param  list<int>  $userIds
+     * @return array<int, list<ResolvedShift>> keyed by user id; a person with no shift on the date is left out
+     */
+    public function calculateMany(array $userIds, string $workDate, CarbonImmutable $now): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        /** @var Collection<int, Collection<int, Shift>> $byUser */
+        $byUser = Shift::query()
+            ->whereIn('user_id', $userIds)
+            ->where('work_date', $workDate)
+            ->orderBy('clock_in_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('user_id');
+
+        if ($byUser->isEmpty()) {
+            return [];
+        }
+
+        $ids = $byUser->keys()->map(fn ($id) => (int) $id)->all();
+        $workdays = $this->calendar->rangeMany($ids, $workDate, $workDate);
+
+        /** @var Collection<int, Collection<int, AttendanceEvent>> $events */
+        $events = AttendanceEvent::query()
+            ->whereIn('shift_id', $byUser->flatten(1)->map(fn (Shift $shift) => $shift->id)->all())
+            ->get()
+            ->groupBy('shift_id');
+
+        $lastClockIns = $byUser->map(fn (Collection $shifts) => $shifts->last()->clock_in_at);
+        $later = Shift::query()
+            ->whereIn('user_id', $ids)
+            ->where('clock_in_at', '>', Time::db($lastClockIns->min()))
+            ->get(['user_id', 'clock_in_at'])
+            ->groupBy('user_id');
+
+        $resolved = [];
+
+        foreach ($byUser as $userId => $shifts) {
+            $following = $later->get($userId, collect())
+                ->map(fn (Shift $shift) => $shift->clock_in_at)
+                ->filter(fn (CarbonImmutable $at) => $at->gt($lastClockIns[$userId]))
+                ->min();
+
+            $resolved[(int) $userId] = $this->resolve(
+                $shifts->values(),
+                $events,
+                in_array($workDate, $workdays[(int) $userId] ?? [], true),
+                $following?->utc(),
+                $now,
+            );
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @param  Collection<int, Shift>  $shifts  one person's shifts on one work date, in clock-in order
+     * @param  Collection<int, Collection<int, AttendanceEvent>>  $events  by shift id
+     * @param  CarbonImmutable|null  $following  clock-in of the person's first shift after the last of these
+     * @return list<ResolvedShift>
+     */
+    private function resolve(Collection $shifts, Collection $events, bool $isWorkday, ?CarbonImmutable $following, CarbonImmutable $now, array $nextClockInOverrides = [], bool $keepSavedRegular = true, array $extraEvents = []): array
+    {
+        $rules = ShiftRules::fromSettings($this->settings);
 
         $clockIns = $shifts->map(fn (Shift $shift) => $this->clockInEvent($shift, $events->get($shift->id, collect())));
         $eventLists = $shifts->map(fn (Shift $shift) => [
@@ -63,7 +145,6 @@ class WorkDateCalculator
         ]);
 
         $cancelled = $shifts->keys()->map(fn (int $i) => $this->isCancelled($clockIns[$i], $eventLists[$i]))->all();
-        $following = $this->clockInAfter($userId, $shifts->last());
 
         /** @var list<array{shift: Shift, result: ShiftResult, before: int}> $calculated */
         $calculated = [];

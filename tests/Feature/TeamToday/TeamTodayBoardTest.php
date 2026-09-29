@@ -1,9 +1,11 @@
 <?php
 
+use App\Modules\Attendance\Services\TeamBoard;
 use App\Modules\Identity\Access\Role;
 use App\Modules\Identity\Enums\UserStatus;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Team;
+use Illuminate\Support\Facades\DB;
 use Tests\Feature\Attendance\Support\Desk;
 use Tests\TestCase;
 
@@ -217,4 +219,30 @@ test('polling reloads only the board prop with a fresh update time', function ()
 test('the Tim hari ini menu item appears for Management once the route exists', function () {
     $this->actingAs($this->lead)->get(route('my-day'))
         ->assertInertia(fn ($page) => $page->where('nav.1.items', fn ($items) => collect($items)->contains('key', 'team_today')));
+});
+
+test('the board reads in the same number of queries however many people are clocked in', function () {
+    $queriesFor = function (int $count) {
+        foreach (range(1, $count) as $n) {
+            $person = teamTodayPerson("Anggota {$count}-{$n}");
+            $this->team->members()->attach($person);
+            $desk = Desk::for($this, $person, "PC-{$count}-{$n}");
+            $desk->send('clock_in', at: '2026-09-14 09:00');
+            $desk->heartbeat('10:59');
+        }
+        $this->travelTo(Desk::time('2026-09-14 11:00'));
+        // The viewer's roles load on the first read only
+        app(TeamBoard::class)->for($this->lead);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $people = app(TeamBoard::class)->for($this->lead)['board']['people'];
+        DB::disableQueryLog();
+
+        expect(collect($people)->where('group', 'working'))->toHaveCount(DB::table('shifts')->count());
+
+        return count(DB::getQueryLog());
+    };
+
+    expect($queriesFor(5))->toBe($queriesFor(2));
 });

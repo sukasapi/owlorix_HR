@@ -91,7 +91,7 @@ class WeekTarget
     }
 
     /**
-     * The week of every person, in a fixed number of queries plus one live calculation per running shift.
+     * The week of every person, in a fixed number of queries plus one live batch per work date with a running shift.
      * Keys per person: kind, week_start, week_end, full_target_minutes (before holidays and leave), target_minutes,
      * worked_minutes, short_minutes, available_days, leave_days, attended_days, target_days and minutes_per_day
      * (interns only).
@@ -200,17 +200,19 @@ class WeekTarget
             ->whereBetween('work_date', [$from, $until])
             ->get(['user_id', 'work_date']);
 
-        foreach ($running as $shift) {
-            $date = (string) $shift->work_date;
-            $resolved = $this->resolver->workDate((int) $shift->user_id, $date, $now);
+        foreach ($running->groupBy(fn (Shift $shift) => (string) $shift->work_date) as $date => $shifts) {
+            $date = (string) $date;
+            $byUser = $this->resolver->workDateMany($shifts->map(fn (Shift $shift) => (int) $shift->user_id)->unique()->values()->all(), $date, $now);
 
-            if ($resolved === []) {
-                unset($worked[(int) $shift->user_id][$date]);
+            foreach ($byUser as $userId => $resolved) {
+                if ($resolved === []) {
+                    unset($worked[$userId][$date]);
 
-                continue;
+                    continue;
+                }
+
+                $worked[$userId][$date] = array_sum(array_map(fn (ResolvedShift $r) => $r->result->regularMinutes, $resolved));
             }
-
-            $worked[(int) $shift->user_id][$date] = array_sum(array_map(fn (ResolvedShift $r) => $r->result->regularMinutes, $resolved));
         }
 
         return $worked;

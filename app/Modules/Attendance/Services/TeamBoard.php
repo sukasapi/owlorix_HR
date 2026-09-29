@@ -70,16 +70,19 @@ class TeamBoard
             ->get()
             ->keyBy('user_id');
 
-        $rows = $people->map(function (User $person) use ($withShiftsToday, $unclosed, $onLeave, $today, $now) {
+        $todays = $this->resolver->workDateMany($withShiftsToday->keys()->map(fn ($id) => (int) $id)->all(), $today, $now);
+        $carriedShifts = $this->resolver->shifts($unclosed->values(), $now);
+
+        $rows = $people->map(function (User $person) use ($withShiftsToday, $todays, $unclosed, $carriedShifts, $onLeave, $today) {
             $leave = $onLeave[$person->id] ?? null;
 
             if (! $withShiftsToday->has($person->id)) {
                 return $this->row($person, [], null, $today, $leave);
             }
 
-            $shifts = $this->resolver->workDate($person->id, $today, $now);
+            $shifts = $todays[$person->id] ?? [];
             $carried = $unclosed->get($person->id);
-            $carriedResolved = $carried !== null ? $this->resolver->shift($carried, $now) : null;
+            $carriedResolved = $carried !== null ? ($carriedShifts[$carried->id] ?? null) : null;
 
             return $this->row($person, $shifts, $carriedResolved?->result->isLive() ? $carriedResolved : null, $today, $leave);
         });
