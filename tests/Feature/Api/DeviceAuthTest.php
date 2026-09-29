@@ -4,6 +4,7 @@ use App\Modules\Identity\Access\Permission;
 use App\Modules\Identity\Access\Role;
 use App\Modules\Identity\Models\Device;
 use App\Modules\Identity\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Attendance\Support\Desk;
 
@@ -107,6 +108,20 @@ it('refuses a suspended person with a valid token', function () {
     $this->person->forceFill(['status' => 'suspended'])->save();
 
     $desk->request('GET', '/api/v1/config')->assertForbidden()->assertJsonPath('code', 'inactive');
+});
+
+it('records when a token was last used at most once a minute', function () {
+    $desk = Desk::for($this, $this->person);
+    $lastUsed = fn () => DB::table('personal_access_tokens')->where('id', $desk->tokenId())->value('last_used_at');
+
+    $desk->at('08:00:00')->request('GET', '/api/v1/me/shift')->assertOk();
+    expect($lastUsed())->toStartWith('2026-09-14 01:00:00');
+
+    $desk->at('08:00:59')->request('GET', '/api/v1/me/shift')->assertOk();
+    expect($lastUsed())->toStartWith('2026-09-14 01:00:00');
+
+    $desk->at('08:01:01')->request('GET', '/api/v1/me/shift')->assertOk();
+    expect($lastUsed())->toStartWith('2026-09-14 01:01:01');
 });
 
 it('logs out by revoking only this token and leaves the shift open', function () {
