@@ -25,10 +25,13 @@ it('shows a browser a page that tells them to reload instead of a 500', function
     $this->get('/test-db-down?tab=today')
         ->assertStatus(503)
         ->assertHeader('Retry-After', '30')
-        ->assertSee(__('errors.database_title'))
+        ->assertSee(__('errors.database.title'))
+        ->assertSee(__('errors.desktop'))
         ->assertSee('href="'.url('/test-db-down?tab=today').'"', escape: false);
 });
 
 it('leaves other database errors as a 500', function () {
-    $this->get('/test-db-bug')->assertStatus(500);
+    config(['app.debug' => false]);
+
+    $this->get('/test-db-bug')->assertStatus(500)->assertSee(__('errors.500.title'));
 });

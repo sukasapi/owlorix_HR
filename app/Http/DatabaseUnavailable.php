@@ -19,9 +19,14 @@ final class DatabaseUnavailable
 {
     public const RETRY_AFTER_SECONDS = 30;
 
+    public static function causedBy(Throwable $e): bool
+    {
+        return ($e instanceof QueryException || $e instanceof PDOException) && (new LostConnectionDetector)->causedByLostConnection($e);
+    }
+
     public static function render(Throwable $e, Request $request): ?Response
     {
-        if (! ($e instanceof QueryException || $e instanceof PDOException) || ! (new LostConnectionDetector)->causedByLostConnection($e)) {
+        if (! self::causedBy($e)) {
             return null;
         }
 
@@ -31,8 +36,6 @@ final class DatabaseUnavailable
             return ApiError::response(503, 'database_unavailable', __('errors.database_api'), $headers);
         }
 
-        return response()->view('errors.database-unavailable', [
-            'retryUrl' => $request->isMethod('GET') ? $request->fullUrl() : url('/'),
-        ], 503, $headers);
+        return response()->view('errors.page', ['page' => ErrorPage::for(503, $request, 'database')], 503, $headers);
     }
 }
