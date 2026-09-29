@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\DatabaseUnavailable;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Modules\Identity\Http\Middleware\EnsureImposterEnabled;
@@ -10,6 +11,7 @@ use App\Modules\Monitoring\Http\Middleware\RecordAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 
@@ -46,4 +48,5 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         // The desktop app always gets JSON errors, never a redirect to the web sign-in page.
         $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());
+        $exceptions->render(fn (Throwable $e, Request $request) => DatabaseUnavailable::render($e, $request));
     })->create();
